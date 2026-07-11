@@ -31,6 +31,7 @@ export interface Shape {
   closed?: boolean;
   hidden?: boolean;
   merge?: boolean;
+  layer?: string | null;
   label?: string;
   icon?: string;
   groupWith?: string;
@@ -39,6 +40,7 @@ export interface Shape {
 export interface Pose {
   angles: Record<string, number>;
   root?: { x?: number; y?: number; r?: number };
+  visible?: Record<string, boolean>;
 }
 
 export interface ActionKey {

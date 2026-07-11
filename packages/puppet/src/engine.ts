@@ -1,4 +1,4 @@
-import type { Bone, Pose, PuppetAction, WorldMap, WorldNode } from './types';
+import type { Bone, Shape, Pose, PuppetAction, PuppetColors, WorldMap, WorldNode } from './types';
 
 export const RAD = Math.PI / 180;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -62,19 +62,70 @@ export function samplePose(action: PuppetAction, time: number): Pose {
   const keys = [...action.keys].sort((a, b) => a.t - b.t);
   const dur = action.dur || keys[keys.length - 1].t || 1;
   let t = action.loop ? ((time % dur) + dur) % dur : clamp(time, 0, dur);
+
+  const heldVisible = (upto: number): Record<string, boolean> => {
+    const acc: Record<string, boolean> = {};
+    for (let idx = 0; idx <= upto; idx++) {
+      const v = keys[idx].pose?.visible;
+      if (v) Object.assign(acc, v);
+    }
+    return acc;
+  };
+
   if (t <= keys[0].t) return keys[0].pose;
   if (t >= keys[keys.length - 1].t) {
     if (action.loop) {
       const k0 = keys[keys.length - 1], k1 = keys[0];
       const span = dur - k0.t + k1.t;
-      return blend(k0.pose, k1.pose, ss(span > 0 ? (t - k0.t) / span : 0));
+      const out = blend(k0.pose, k1.pose, ss(span > 0 ? (t - k0.t) / span : 0));
+      out.visible = heldVisible(keys.length - 1);
+      return out;
     }
-    return keys[keys.length - 1].pose;
+    const out = { ...keys[keys.length - 1].pose };
+    out.visible = heldVisible(keys.length - 1);
+    return out;
   }
   let i = 0;
   while (i < keys.length - 1 && keys[i + 1].t <= t) i++;
   const k0 = keys[i], k1 = keys[i + 1];
-  return blend(k0.pose, k1.pose, ss((t - k0.t) / ((k1.t - k0.t) || 1)));
+  const out = blend(k0.pose, k1.pose, ss((t - k0.t) / ((k1.t - k0.t) || 1)));
+  out.visible = heldVisible(i);
+  return out;
+}
+
+export function boneMerges(b: Bone): boolean {
+  if (b.merge != null) return !!b.merge;
+  return b.drawAs === 'limb';
+}
+
+export function shapeMerges(s: Shape, colors: PuppetColors): boolean {
+  if (s.merge != null) return !!s.merge;
+  if (s.stroke === false) return false;
+  const isSkin = s.fill === 'skin' || colors[s.fill] === colors.skin;
+  const id = (s.id || '').toLowerCase();
+  return isSkin && !/nose|eye|brow|mouth|pupil|tooth|lip/.test(id);
+}
+
+function resolveLayer(byId: Record<string, Bone>, node: Bone | Shape | string): string {
+  let cur: Bone | Shape | undefined = typeof node === 'string' ? byId[node] : node;
+  if (cur?.layer) return cur.layer as string;
+  if (cur && 'bone' in cur && !('parent' in cur)) {
+    const bone = byId[(cur as Shape).bone];
+    if (bone?.layer) return bone.layer as string;
+    cur = bone;
+  }
+  let bone = cur as Bone | undefined;
+  while (bone) {
+    if (/armlower/i.test(bone.id || '')) return 'front';
+    bone = bone.parent != null ? byId[bone.parent] : undefined;
+  }
+  return 'back';
+}
+
+export function layerOf(bones: Bone[], node: Bone | Shape | string): string {
+  const byId: Record<string, Bone> = {};
+  bones.forEach((b) => { byId[b.id] = b; });
+  return resolveLayer(byId, node);
 }
 
 export function polyPath(pts: [number, number][], closed?: boolean): string {

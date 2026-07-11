@@ -1,11 +1,44 @@
-node_modules
-dist
-out
-.remotion
+# dependencies
+node_modules/
+
+# build outputs
+dist/
+out/
+
+# Remotion internals
+.remotion/
+
+# ── binary / media assets — store outside git ────────────────────────────────
 *.mp4
 *.mov
+*.mp3
+*.m4a
+*.ogg
+*.wav
+*.aac
 *.png
 *.jpg
-!public/**/*.png
-!public/**/*.jpg
+*.jpeg
+*.gif
+*.webp
+*.avif
+*.ico
+
+# ── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+
+# ── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store
+**/.DS_Store
+Thumbs.db
+
+# ── Claude Code ──────────────────────────────────────────────────────────────
+# skills/ are downloaded deps (like node_modules); skills-lock.json is kept
+.claude/skills/
+
+# ── temporary / scratch ──────────────────────────────────────────────────────
+apps/remotion/temp/
+
+# ── scratch model exports at repo root ───────────────────────────────────────
+puppet-model*.js

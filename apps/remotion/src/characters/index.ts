@@ -5,6 +5,9 @@
  * Lottie creature system (lottie/) and all code-drawn SVG characters & scenery
  * (svg/). Anything drawable lives here — never inside a single composition.
  */
+export { PuppetActor } from "./puppet/PuppetActor";
+export { cavemanModel } from "./puppet/caveman-model";
+
 export { LottieCharacter } from "./lottie/LottieCharacter";
 export type { LottieCharacterName, LottieCharacterProps } from "./lottie/LottieCharacter";
 
