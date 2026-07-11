@@ -1,0 +1,23 @@
+{
+  "name": "rigger",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite --port=5173",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@animal-clamp/puppet": "workspace:*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.9.2",
+    "vite": "^6.3.5"
+  }
+}

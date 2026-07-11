@@ -1,0 +1,40 @@
+{
+  "name": "remotion",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "sync:characters": "node scripts/sync-characters.mjs",
+    "predev": "npm run sync:characters",
+    "dev": "remotion studio --port=39573",
+    "prestudio": "npm run sync:characters",
+    "studio": "remotion studio --port=39573",
+    "prerender": "npm run sync:characters",
+    "render": "node scripts/remotion-out.mjs render",
+    "prestill": "npm run sync:characters",
+    "still": "node scripts/remotion-out.mjs still",
+    "render:raw": "remotion render",
+    "still:raw": "remotion still",
+    "build": "remotion bundle",
+    "lint": "tsc --noEmit",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@animal-clamp/puppet": "workspace:*",
+    "@remotion/google-fonts": "4.0.370",
+    "@remotion/lottie": "4.0.370",
+    "@remotion/shapes": "4.0.370",
+    "@remotion/transitions": "4.0.370",
+    "lottie-web": "^5.13.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.370",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@remotion/cli": "4.0.370",
+    "@remotion/eslint-config-flat": "^4.0.483",
+    "@types/react": "19.2.0",
+    "@types/react-dom": "19.2.0",
+    "typescript": "5.9.2"
+  }
+}

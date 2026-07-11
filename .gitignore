@@ -1,0 +1,11 @@
+node_modules
+dist
+out
+.remotion
+*.mp4
+*.mov
+*.png
+*.jpg
+!public/**/*.png
+!public/**/*.jpg
+.DS_Store
