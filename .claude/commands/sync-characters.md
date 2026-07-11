@@ -1,6 +1,6 @@
 ---
 description: Re-register Lottie characters by syncing the catalog with public/characters/lottie/
-allowed-tools: Bash(npm run sync:characters)
+allowed-tools: Bash(pnpm --filter remotion sync:characters)
 ---
 
 Re-register the project's Lottie characters.
@@ -8,7 +8,7 @@ Re-register the project's Lottie characters.
 Run:
 
 ```bash
-npm run sync:characters
+pnpm --filter remotion sync:characters
 ```
 
 This rescans `public/characters/lottie/*.json` and regenerates
