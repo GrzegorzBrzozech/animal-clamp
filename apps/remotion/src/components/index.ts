@@ -6,6 +6,7 @@ export { AnimatedText } from "./AnimatedText";
 export { Card } from "./Card";
 export { MediaImage } from "./MediaImage";
 export { PhotoPin } from "./PhotoPin";
+export { DoublingBadge } from "./DoublingBadge";
 
 // Explainer building blocks (formerly carnivores-local).
 export { Cell } from "./Cell";

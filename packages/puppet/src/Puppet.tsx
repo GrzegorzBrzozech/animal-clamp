@@ -1,5 +1,5 @@
 import React from 'react';
-import { computeWorld, samplePose, polyPath, boneMerges, shapeMerges, layerOf } from './engine';
+import { computeWorld, samplePose, polyPath, boneMerges, shapeMerges, resolveLayer } from './engine';
 import type { PuppetModel, Pose, Shape, PuppetColors } from './types';
 
 interface ShapeElProps {
@@ -76,7 +76,7 @@ export function Puppet({ model, action, time = 0, pose: poseProp, wobble = true,
     if (!wn) return;
     const deg = (wn.A * 180) / Math.PI;
     const bMerge = merged && boneMerges(b);
-    const bLayer = layerOf(bones, b);
+    const bLayer = resolveLayer(byId, b);
 
     if (b.drawAs === 'limb' && b.len) {
       if (bMerge) {
@@ -167,6 +167,8 @@ export function Puppet({ model, action, time = 0, pose: poseProp, wobble = true,
     }
   });
 
+  // Merged groups sort at their minimum z. Non-merged items must have z values
+  // outside the merged z range to interleave correctly (e.g. face overlays above max merged z).
   if (backEls.length) items.push({ z: isFinite(minBackZ) ? minBackZ : 0, key: 'merged-back', el: (<g key="merged-back" filter="url(#pupMerge)">{backEls}</g>) });
   if (frontEls.length) items.push({ z: isFinite(minFrontZ) ? minFrontZ : 0, key: 'merged-front', el: (<g key="merged-front" filter="url(#pupMerge)">{frontEls}</g>) });
   items.sort((a, b) => a.z - b.z);

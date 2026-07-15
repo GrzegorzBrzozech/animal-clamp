@@ -21,7 +21,8 @@ export function computeWorld(bones: Bone[], pose: Pose): WorldMap {
       const ox = (b.x ?? 0) + rx, oy = (b.y ?? 0) + ry;
       node = { ox, oy, A, tipX: ox + Math.cos(A) * (b.len ?? 0), tipY: oy + Math.sin(A) * (b.len ?? 0) };
     } else {
-      const p = b.parent ? w(byId[b.parent]) : { ox: 0, oy: 0, A: 0, tipX: 0, tipY: 0 };
+      const parentBone = b.parent ? byId[b.parent] : null;
+      const p = parentBone ? w(parentBone) : { ox: 0, oy: 0, A: 0, tipX: 0, tipY: 0 };
       const c = Math.cos(p.A), s = Math.sin(p.A);
       const ox = p.tipX + ((b.x ?? 0) * c - (b.y ?? 0) * s);
       const oy = p.tipY + ((b.x ?? 0) * s + (b.y ?? 0) * c);
@@ -60,7 +61,7 @@ export function blend(p0: Pose, p1: Pose, u: number): Pose {
 export function samplePose(action: PuppetAction, time: number): Pose {
   if (!action?.keys?.length) return { angles: {}, root: {} };
   const keys = [...action.keys].sort((a, b) => a.t - b.t);
-  const dur = action.dur || keys[keys.length - 1].t || 1;
+  const dur = action.dur > 0 ? action.dur : (keys[keys.length - 1].t || 1);
   let t = action.loop ? ((time % dur) + dur) % dur : clamp(time, 0, dur);
 
   const heldVisible = (upto: number): Record<string, boolean> => {
@@ -72,7 +73,7 @@ export function samplePose(action: PuppetAction, time: number): Pose {
     return acc;
   };
 
-  if (t <= keys[0].t) return keys[0].pose;
+  if (t <= keys[0].t) return { ...keys[0].pose };
   if (t >= keys[keys.length - 1].t) {
     if (action.loop) {
       const k0 = keys[keys.length - 1], k1 = keys[0];
@@ -102,22 +103,15 @@ export function shapeMerges(s: Shape, colors: PuppetColors): boolean {
   if (s.merge != null) return !!s.merge;
   if (s.stroke === false) return false;
   const isSkin = s.fill === 'skin' || colors[s.fill] === colors.skin;
-  const id = (s.id || '').toLowerCase();
-  return isSkin && !/nose|eye|brow|mouth|pupil|tooth|lip/.test(id);
+  return isSkin;
 }
 
-function resolveLayer(byId: Record<string, Bone>, node: Bone | Shape | string): string {
-  let cur: Bone | Shape | undefined = typeof node === 'string' ? byId[node] : node;
+export function resolveLayer(byId: Record<string, Bone>, node: Bone | Shape | string): string {
+  const cur: Bone | Shape | undefined = typeof node === 'string' ? byId[node] : node;
   if (cur?.layer) return cur.layer as string;
   if (cur && 'bone' in cur && !('parent' in cur)) {
     const bone = byId[(cur as Shape).bone];
     if (bone?.layer) return bone.layer as string;
-    cur = bone;
-  }
-  let bone = cur as Bone | undefined;
-  while (bone) {
-    if (/armlower/i.test(bone.id || '')) return 'front';
-    bone = bone.parent != null ? byId[bone.parent] : undefined;
   }
   return 'back';
 }

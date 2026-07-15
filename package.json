@@ -5,7 +5,8 @@
   "scripts": {
     "rigger": "pnpm --filter rigger dev",
     "remotion": "pnpm --filter remotion dev",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "test": "pnpm --filter @animal-clamp/puppet test"
   },
   "engines": {
     "node": ">=18"

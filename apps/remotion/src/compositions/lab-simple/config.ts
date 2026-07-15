@@ -1,11 +1,3 @@
-export const characterLabConfig = {
-  id: "CharacterLab",
-  fps: 30,
-  width: 1920,
-  height: 1080,
-  durationInFrames: 300,
-} as const;
-
 export const characterGalleryConfig = {
   id: "CharacterGallery",
   fps: 30,

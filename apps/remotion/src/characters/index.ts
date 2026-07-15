@@ -41,6 +41,12 @@ export { ButterflyPencil } from "./svg/ButterflyPencil";
 // Pencil-on-paper school / science objects (books, stamp, flask, building, page, head).
 export { BookPencil, StampMark, FlaskPencil, BuildingPencil, PagePencil, HeadPencil, ManuscriptPencil, HousePencil } from "./svg/SchoolObjects";
 export { PersonPencil, type PersonPose } from "./svg/PersonPencil";
+export { PoliticianPencil } from "./svg/PoliticianPencil";
+export { OfficerPencil } from "./svg/OfficerPencil";
+export { BarrierPencil } from "./svg/BarrierPencil";
+export { Seagull } from "./svg/Seagull";
+export { KingPencil } from "./svg/KingPencil";
+export { PrincessPencil } from "./svg/PrincessPencil";
 
 /** Catalog of pencil-style SVG creatures (macket look). */
 export const PENCIL_CHARACTERS = ["frog", "rat", "deer", "hominid", "amoeba", "fish", "worm", "butterfly"] as const;

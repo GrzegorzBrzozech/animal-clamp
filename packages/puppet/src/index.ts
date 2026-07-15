@@ -1,6 +1,6 @@
 export { Puppet } from './Puppet';
 export type { PuppetProps } from './Puppet';
-export { computeWorld, samplePose, blend, polyPath, RAD, boneMerges, shapeMerges, layerOf } from './engine';
+export { computeWorld, samplePose, blend, polyPath, RAD, boneMerges, shapeMerges, layerOf, resolveLayer } from './engine';
 export type { PuppetModel, Bone, Shape, Pose, PuppetAction, PuppetColors, WorldNode, WorldMap } from './types';
 
 import type { PuppetModel } from './types';
@@ -14,9 +14,9 @@ export const DEFAULT_PUPPET: PuppetModel = {
     { id: 'root', parent: null, x: 4, y: 276, angle: 0, len: 0, z: 0, merge: true, drawAs: 'limb', width: 28, layer: 'back', icon: '💪' },
     { id: 'head', parent: 'root', x: 2, y: -215, angle: 0, len: 0, z: 20, merge: false, drawAs: null, width: 22 },
     { id: 'armUpperL', parent: 'root', x: -83, y: -143, angle: 140.5, len: 80, drawAs: 'limb', width: 52, z: 6, endCap: false, merge: true, layer: null },
-    { id: 'armLowerL', parent: 'armUpperL', x: 3, y: -2, angle: -53.2, len: 80, drawAs: 'limb', width: 45, z: 12, endCap: true },
+    { id: 'armLowerL', parent: 'armUpperL', x: 3, y: -2, angle: -53.2, len: 80, drawAs: 'limb', width: 45, z: 23, endCap: true, layer: 'front' },
     { id: 'armUpperR', parent: 'root', x: 90, y: -139, angle: 44.5, len: 80, drawAs: 'limb', width: 52, z: 6, endCap: false },
-    { id: 'armLowerR', parent: 'armUpperR', x: 6, y: 0, angle: 42.1, len: 80, drawAs: 'limb', width: 45, z: 11 },
+    { id: 'armLowerR', parent: 'armUpperR', x: 6, y: 0, angle: 42.1, len: 80, drawAs: 'limb', width: 45, z: 23, layer: 'front' },
     { id: 'legUpperL', parent: 'root', x: -41, y: 5, angle: 100.1, len: 92, drawAs: 'limb', width: 50, z: 2, endCap: false },
     { id: 'legLowerL', parent: 'legUpperL', x: 0, y: -1, angle: -7.5, len: 20, drawAs: 'limb', width: 50, z: 2, endCap: false },
     { id: 'legUpperR', parent: 'root', x: 38, y: 2, angle: 75.2, len: 92, drawAs: 'limb', width: 50, z: 2, endCap: false },
@@ -36,14 +36,14 @@ export const DEFAULT_PUPPET: PuppetModel = {
     { id: 'browR', bone: 'head', kind: 'poly', z: 22, fill: 'ink', stroke: false, pts: [[40,-3],[14,0],[14,4],[40,3]] },
     { id: 'eyeL', bone: 'head', kind: 'circle', z: 22, fill: 'ink', stroke: false, cx: -12, cy: 4, r: 5 },
     { id: 'eyeR', bone: 'head', kind: 'circle', z: 22, fill: 'ink', stroke: false, cx: 26, cy: 5, r: 5 },
-    { id: 'nose', bone: 'head', kind: 'poly', z: 22, fill: 'skin', pts: [[5,1],[-1,39],[21,39],[9,1]] },
+    { id: 'nose', bone: 'head', kind: 'poly', z: 22, fill: 'skin', merge: false, pts: [[5,1],[-1,39],[21,39],[9,1]] },
     { id: 'mouth', bone: 'head', kind: 'poly', z: 22, fill: 'ink', stroke: false, pts: [[-7,47],[29,47],[29,50],[-7,50]] },
-    { id: 'shapehpyuy', bone: 'armLowerL', kind: 'circle', z: 10, fill: 'skin', merge: true, cx: 85, cy: -23, r: 8, label: 'ThumbR', icon: '👍' },
-    { id: 'shape5a485', bone: 'armLowerR', kind: 'circle', z: 10, fill: 'skin', cx: 84, cy: 23, r: 8, label: 'ThumbL', icon: '👍' },
-    { id: 'shape9k3hj', bone: 'armLowerR', kind: 'circle', z: 10, fill: 'skin', cx: 103, cy: 3, r: 8, label: 'Pointer', icon: '👆' },
-    { id: 'shapepy1qf', bone: 'armLowerR', kind: 'circle', z: 10, fill: 'skin', cx: 96, cy: -17, r: 8, label: 'PinkyL', icon: '🤙' },
-    { id: 'shapeugpyx', bone: 'armLowerL', kind: 'circle', z: 10, fill: 'skin', cx: 98, cy: -9, r: 8, label: 'PointerR', icon: '👆' },
-    { id: 'shape7vczj', bone: 'armLowerL', kind: 'circle', z: 10, fill: 'skin', cx: 94, cy: 15, r: 8, label: 'PinkeR', icon: '🤙' },
+    { id: 'shapehpyuy', bone: 'armLowerL', kind: 'circle', z: 23, fill: 'skin', merge: true, cx: 85, cy: -23, r: 8, label: 'ThumbR', icon: '👍' },
+    { id: 'shape5a485', bone: 'armLowerR', kind: 'circle', z: 23, fill: 'skin', cx: 84, cy: 23, r: 8, label: 'ThumbL', icon: '👍' },
+    { id: 'shape9k3hj', bone: 'armLowerR', kind: 'circle', z: 23, fill: 'skin', cx: 103, cy: 3, r: 8, label: 'Pointer', icon: '👆' },
+    { id: 'shapepy1qf', bone: 'armLowerR', kind: 'circle', z: 23, fill: 'skin', cx: 96, cy: -17, r: 8, label: 'PinkyL', icon: '🤙' },
+    { id: 'shapeugpyx', bone: 'armLowerL', kind: 'circle', z: 23, fill: 'skin', cx: 98, cy: -9, r: 8, label: 'PointerR', icon: '👆' },
+    { id: 'shape7vczj', bone: 'armLowerL', kind: 'circle', z: 23, fill: 'skin', cx: 94, cy: 15, r: 8, label: 'PinkeR', icon: '🤙' },
     { id: 'shapet7k8o', bone: 'root', kind: 'circle', z: 10, fill: 'ink', cx: 39, cy: -32, r: 9, label: 'Dot-1', icon: '⚫️', groupWith: 'cloth' },
     { id: 'shapek5gxj', bone: 'root', kind: 'circle', z: 10, fill: 'ink', cx: -64, cy: 40, r: 7, label: 'Dot-2', icon: '⚫️', groupWith: 'cloth' },
     { id: 'shapecevl7', bone: 'root', kind: 'circle', z: 10, fill: 'ink', cx: -18, cy: -12, r: 5, label: 'Dot-3', icon: '⚫️', groupWith: 'cloth' },
