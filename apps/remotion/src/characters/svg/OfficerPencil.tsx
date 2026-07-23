@@ -28,6 +28,13 @@ const PoliceCap: React.FC<{ size: number }> = ({ size }) => {
       <Sketch width={2.5}>
         <line x1={13} y1={22} x2={65} y2={22} />
       </Sketch>
+      {/* Yellow 7-pointed star centered on crown */}
+      <polygon
+        points="39,6.5 39.95,10.02 43.30,8.57 41.14,11.51 44.36,13.22 40.72,13.37 41.39,16.96 39,14.2 36.61,16.96 37.28,13.37 33.64,13.22 36.86,11.51 34.70,8.57 38.05,10.02"
+        fill="#F5C200"
+        stroke={INK}
+        strokeWidth={0.8}
+      />
     </svg>
   );
 };

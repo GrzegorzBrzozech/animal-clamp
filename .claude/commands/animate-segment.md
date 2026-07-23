@@ -200,3 +200,36 @@ After finishing, update this command file with:
 - **montage `duration_sec` бреше** — стояло 45, реальне аудіо 56.7s (`ffprobe`). Завжди ffprobe speech.mp3, не довіряй montage.
 - **`transcribe.sh` output → `videos/in progress/transcribe/speech.srt`** (спільна папка рівня «in progress»), НЕ в сегмент і не в `<video>/transcribe/`. Там уже лежав чужий `этап 1.srt`. Найнадійніше — читати тайминги прямо з verbose-stdout `transcribe.sh` (він друкує `[hh:mm.sss --> ...]` рядки), а не шукати файл.
 - **PhotoPin inset перекриває caption головного фото** — при двох фото в одній колонці inset накриває нижній підпис. Або опускай inset нижче bottom головного пін (top130+h430 → bottom≈634), або скорочуй caption до одного слова.
+
+---
+
+## Retrospective — session 2026-07-22 (Victimless Crimes / character exchange animation)
+
+**Зручно:**
+- **Bidirectional object exchange** — split кожного об'єкта на три стани (static→fly→arrived) з окремими opacity-змінними. Два об'єкти, що летять назустріч, не колізують якщо один arcs up (`-80`), другий arcs down (`+60`).
+- **Props-компонент з x/y** — SVG-пропи (Papers, PackageSvg) без прив'язки до позиції; `x`/`y` — опційні defaultProps. Дозволяє рендерити той самий shape у трьох місцях (static, flying, arrived) без дублювання коду.
+- **PersonPencil hand coords** — для `pose="present"` можна точно обчислити позицію руки через viewBox-пропорції (div нижче). Не треба вгадувати.
+- **Shadow overlay** — CSS `linear-gradient(to right, transparent, #00000066)` на окремому `<div>` поверх усього правого краю. Простіше, ніж SVG-mask.
+- **Shock reaction** — `spring({ damping:7, mass:0.5 })` → jumpY offset. Низький damping дає пружне підстрибування без зайвого коду.
+- **IDE linter interference** — якщо IDE циклічно auto-модифікує файл (додає/видаляє імпорти), писати через bash heredoc, не через Edit-інструмент.
+
+**Незручно / потребує поліпшень:**
+- **Officer top-position formula** — спочатку `bottom: GROUND - 880 + (880 - officerSize)` (неправильно). Правильна формула завжди: `top: GROUND - OFFICER_SIZE`. Ноги стоять на GROUND, голова вгорі.
+- **Unused vars після рефакторингу** — перейменував `papersOp` → три нові змінні, але JSX ще тримав старе ім'я. TypeScript це ловить як `Cannot find name`, не одразу зрозуміло що не так. Після rename завжди шукай старе ім'я grep-ом.
+- **MiniScenesScene без боксів** — перша ітерація мала boxes + підписи. Юзер прибрав їх і залишив тільки вертикальні лінії. Правило: не додавай підписи у box якщо narration не прямо вказує на них.
+
+---
+
+
+## Scene Templates
+
+Готові файли-стартери в `.claude/scene-templates/`:
+
+| Файл | Сцена |
+|---|---|
+| `photo-quote.tsx` | Фото автора + книга-inset + вертикальна риска + цитата справа |
+| `character-exchange.tsx` | Дві фігури обмінюються предметами (летять назустріч), офіцер у тіні |
+| `multi-column-grid.tsx` | N колонок з'являються по черзі (emoji + EmotivePerson), ґрати в кінці |
+| `data-viz-grid.tsx` | Великий stat-number + 10×10 сітка клітинок + легенда + source |
+
+Копіюй потрібний файл у `scenes/`, перейменуй компонент та заміни константи.

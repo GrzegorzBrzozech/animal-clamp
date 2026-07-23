@@ -17,6 +17,18 @@ import { homeschoolSchema, DEFAULT_STARTS as HOME_STARTS } from "~/compositions/
 import { Rothbard } from "~/compositions/0147-evil-education/rothbard";
 import { rothbardConfig } from "~/compositions/0147-evil-education/rothbard/config";
 import { rothbardSchema, DEFAULT_STARTS as ROTH_STARTS } from "~/compositions/0147-evil-education/rothbard/plan";
+import { WhatIsPower } from "~/compositions/0139-power-dependency/what-is-power";
+import { whatIsPowerConfig } from "~/compositions/0139-power-dependency/what-is-power/config";
+import { whatIsPowerSchema, DEFAULT_STARTS as WHAT_IS_POWER_STARTS } from "~/compositions/0139-power-dependency/what-is-power/plan";
+import { VictimlessCrimes } from "~/compositions/0139-power-dependency/victimless-crimes";
+import { victimlessCrimesConfig } from "~/compositions/0139-power-dependency/victimless-crimes/config";
+import { victimlessCrimesSchema, DEFAULT_STARTS as VICTIMLESS_CRIMES_STARTS } from "~/compositions/0139-power-dependency/victimless-crimes/plan";
+import { PoliticiansLongevity } from "~/compositions/0139-power-dependency/politicians-longevity";
+import { politiciansLongevityConfig } from "~/compositions/0139-power-dependency/politicians-longevity/config";
+import { politiciansLongevitySchema, DEFAULT_STARTS as POLITICIANS_LONGEVITY_STARTS } from "~/compositions/0139-power-dependency/politicians-longevity/plan";
+import { TeachersSalary } from "~/compositions/0139-power-dependency/teachers-salary";
+import { teachersSalaryConfig } from "~/compositions/0139-power-dependency/teachers-salary/config";
+import { teachersSalarySchema, DEFAULT_STARTS as TEACHERS_SALARY_STARTS } from "~/compositions/0139-power-dependency/teachers-salary/plan";
 import { HabsburgInbreeding } from "~/compositions/0148-carnivore-state/habsburg-inbreeding";
 import { habsburgInbreedingConfig } from "~/compositions/0148-carnivore-state/habsburg-inbreeding/config";
 import { habsburgInbreedingSchema, DEFAULT_STARTS as HABSBURG_STARTS } from "~/compositions/0148-carnivore-state/habsburg-inbreeding/plan";
@@ -40,7 +52,9 @@ import { homoErectusConfig } from "~/compositions/lab-complex/homo-erectus/confi
 import { CharacterGallery } from "~/compositions/lab-simple/CharacterGallery";
 import { PredationPencilScene } from "~/compositions/lab-simple/PredationPencilScene";
 import { VegansVsHunters } from "~/compositions/lab-simple/VegansVsHunters";
-import { characterGalleryConfig, predationPencilConfig, vegansVsHuntersConfig } from "~/compositions/lab-simple/config";
+import { SubtitledShort, subtitledShortSchema, calculateMetadata as subtitledShortMeta } from "~/compositions/lab-simple/SubtitledShort";
+import { SubtitledHorizontal, subtitledHorizontalSchema, calculateMetadataHorizontal } from "~/compositions/lab-simple/SubtitledHorizontal";
+import { characterGalleryConfig, predationPencilConfig, vegansVsHuntersConfig, subtitledShortConfig, subtitledHorizontalConfig } from "~/compositions/lab-simple/config";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -105,6 +119,49 @@ export const RemotionRoot: React.FC = () => {
           fps={rothbardConfig.fps}
           width={rothbardConfig.width}
           height={rothbardConfig.height}
+        />
+      </Folder>
+
+      <Folder name="0139-power-dependency">
+        <Composition
+          id={whatIsPowerConfig.id}
+          component={WhatIsPower}
+          schema={whatIsPowerSchema}
+          defaultProps={WHAT_IS_POWER_STARTS}
+          durationInFrames={whatIsPowerConfig.durationInFrames}
+          fps={whatIsPowerConfig.fps}
+          width={whatIsPowerConfig.width}
+          height={whatIsPowerConfig.height}
+        />
+        <Composition
+          id={victimlessCrimesConfig.id}
+          component={VictimlessCrimes}
+          schema={victimlessCrimesSchema}
+          defaultProps={VICTIMLESS_CRIMES_STARTS}
+          durationInFrames={victimlessCrimesConfig.durationInFrames}
+          fps={victimlessCrimesConfig.fps}
+          width={victimlessCrimesConfig.width}
+          height={victimlessCrimesConfig.height}
+        />
+        <Composition
+          id={politiciansLongevityConfig.id}
+          component={PoliticiansLongevity}
+          schema={politiciansLongevitySchema}
+          defaultProps={POLITICIANS_LONGEVITY_STARTS}
+          durationInFrames={politiciansLongevityConfig.durationInFrames}
+          fps={politiciansLongevityConfig.fps}
+          width={politiciansLongevityConfig.width}
+          height={politiciansLongevityConfig.height}
+        />
+        <Composition
+          id={teachersSalaryConfig.id}
+          component={TeachersSalary}
+          schema={teachersSalarySchema}
+          defaultProps={TEACHERS_SALARY_STARTS}
+          durationInFrames={teachersSalaryConfig.durationInFrames}
+          fps={teachersSalaryConfig.fps}
+          width={teachersSalaryConfig.width}
+          height={teachersSalaryConfig.height}
         />
       </Folder>
 
@@ -213,6 +270,28 @@ export const RemotionRoot: React.FC = () => {
           fps={vegansVsHuntersConfig.fps}
           width={vegansVsHuntersConfig.width}
           height={vegansVsHuntersConfig.height}
+        />
+        <Composition
+          id={subtitledShortConfig.id}
+          component={SubtitledShort}
+          schema={subtitledShortSchema}
+          calculateMetadata={subtitledShortMeta}
+          defaultProps={{ videoSrc: "", subtitles: [], alreadyVertical: false }}
+          durationInFrames={subtitledShortConfig.durationInFrames}
+          fps={subtitledShortConfig.fps}
+          width={subtitledShortConfig.width}
+          height={subtitledShortConfig.height}
+        />
+        <Composition
+          id={subtitledHorizontalConfig.id}
+          component={SubtitledHorizontal}
+          schema={subtitledHorizontalSchema}
+          calculateMetadata={calculateMetadataHorizontal}
+          defaultProps={{ videoSrc: "", subtitles: [], withBlurredBg: false }}
+          durationInFrames={subtitledHorizontalConfig.durationInFrames}
+          fps={subtitledHorizontalConfig.fps}
+          width={subtitledHorizontalConfig.width}
+          height={subtitledHorizontalConfig.height}
         />
       </Folder>
     </>

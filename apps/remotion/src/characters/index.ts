@@ -41,10 +41,15 @@ export { ButterflyPencil } from "./svg/ButterflyPencil";
 // Pencil-on-paper school / science objects (books, stamp, flask, building, page, head).
 export { BookPencil, StampMark, FlaskPencil, BuildingPencil, PagePencil, HeadPencil, ManuscriptPencil, HousePencil } from "./svg/SchoolObjects";
 export { PersonPencil, type PersonPose } from "./svg/PersonPencil";
+export { EmotivePerson } from "./svg/EmotivePerson";
+export { KneelingPersonPencil } from "./svg/KneelingPersonPencil";
+export { MilitaryPencil } from "./svg/MilitaryPencil";
 export { PoliticianPencil } from "./svg/PoliticianPencil";
 export { OfficerPencil } from "./svg/OfficerPencil";
 export { BarrierPencil } from "./svg/BarrierPencil";
 export { Seagull } from "./svg/Seagull";
+export { GrandThrone } from "./svg/GrandThrone";
+export { Guillotine } from "./svg/Guillotine";
 export { KingPencil } from "./svg/KingPencil";
 export { PrincessPencil } from "./svg/PrincessPencil";
 

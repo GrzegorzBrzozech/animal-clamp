@@ -16,7 +16,11 @@
     "still:raw": "remotion still",
     "build": "remotion bundle",
     "lint": "tsc --noEmit",
-    "upgrade": "remotion upgrade"
+    "upgrade": "remotion upgrade",
+    "subs:parse": "node scripts/srt-to-props.mjs",
+    "subs:parse:json": "node scripts/whisper-json-to-props.mjs",
+    "subs:burn": "bash scripts/burn-subs.sh",
+    "to-shorts": "bash scripts/batch-subtitle.sh"
   },
   "dependencies": {
     "@animal-clamp/puppet": "workspace:*",
