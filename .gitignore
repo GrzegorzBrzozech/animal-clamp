@@ -37,6 +37,10 @@ Thumbs.db
 # skills/ are downloaded deps (like node_modules); skills-lock.json is kept
 .claude/skills/
 
+# ── Python venv ──────────────────────────────────────────────────────────────
+.venv/
+__pycache__/
+
 # ── temporary / scratch ──────────────────────────────────────────────────────
 apps/remotion/temp/
 

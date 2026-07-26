@@ -1,0 +1,4 @@
+-e ../tools/transcribe
+-e ../tools/text-to-speech
+-e ../tools/static-charts
+-e ../tools/translate
