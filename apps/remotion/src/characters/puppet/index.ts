@@ -1,2 +1,3 @@
 export { PuppetActor } from './PuppetActor';
-export { cavemanModel } from './caveman-model';
+export { model as cavemanModel } from './caveman-model';
+export { model as pithecanthropusModel } from './pithecanthropus-model';

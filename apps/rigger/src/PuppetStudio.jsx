@@ -1,10 +1,12 @@
 // puppet-studio.jsx — UNIVERSAL editor for the puppet engine.
 // Two modes: RIG (edit bones + shape points) and ACTION (keyframe timeline).
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEFAULT_PUPPET } from '@animal-clamp/puppet';
+import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, layerOf, DEFAULT_PUPPET } from '@animal-clamp/puppet';
 
   const RAD = Math.PI / 180, DEG = 180 / Math.PI;
   const PAPER = '#f4f1e9', ACCENT = '#c25a3a', BONE = '#2f6fd0';
+  const GROUP_PALETTE = ['#c25a3a', '#2f6fd0', '#3a8f5c', '#a0522d', '#8659b5', '#c98a1f', '#1f9e9e', '#b5457a'];
+  const groupColor = (name) => { if (!name) return '#a49d8b'; let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return GROUP_PALETTE[h % GROUP_PALETTE.length]; };
   const rot = (x, y, a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
   const uid = (p) => p + Math.random().toString(36).slice(2, 7);
   const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -17,17 +19,51 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
     border: active ? '2.5px solid #2c2b28' : '2px solid #a49d8b',
     borderRadius: i % 2 ? '12px 5px 11px 6px' : '6px 12px 5px 13px', fontWeight: active ? 700 : 400,
   });
-  const STORE = 'puppet.model.v3';
-  const FILEPATH_STORE = 'puppet.filepath.v1';
+  const STORE = 'puppet.model.v4';
+  const HAS_FS = typeof window !== 'undefined' && 'showOpenFilePicker' in window;
+
+  // ---- IndexedDB helpers for persisting FileSystemFileHandles ----
+  const IDB_NAME = 'puppet-studio-v1';
+  const IDB_STORE_HANDLES = 'recent-handles';
+  const openIDB = () => new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE_HANDLES, { keyPath: 'name' });
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  const persistHandle = async (handle) => {
+    try {
+      const db = await openIDB();
+      await new Promise((res, rej) => {
+        const tx = db.transaction(IDB_STORE_HANDLES, 'readwrite');
+        tx.objectStore(IDB_STORE_HANDLES).put({ name: handle.name, handle, ts: Date.now() });
+        tx.oncomplete = res; tx.onerror = rej;
+      });
+    } catch (e) { /* IDB unavailable */ }
+  };
+  const loadRecentHandles = async () => {
+    try {
+      const db = await openIDB();
+      return await new Promise((res) => {
+        const tx = db.transaction(IDB_STORE_HANDLES, 'readonly');
+        const req = tx.objectStore(IDB_STORE_HANDLES).getAll();
+        req.onsuccess = () => res((req.result || []).sort((a, b) => b.ts - a.ts).slice(0, 8));
+      });
+    } catch { return []; }
+  };
 
   const modelToJs = (m) =>
     '// puppet-model.js — exported from Puppet Studio ' + new Date().toISOString().slice(0, 10) + '\n'
     + 'export const model = ' + JSON.stringify(m, null, 2) + ';\nexport default model;\n';
 
   const parseModelFromText = (txt) => {
-    const marker = txt.search(/export\s+(const\s+model\s*=|default)/);
-    const from = marker >= 0 ? marker : 0;
-    const start = txt.indexOf('{', from);
+    // Match: export const <anyName>[: <Type>] = {   (handles TypeScript type annotations)
+    // or:    export default {
+    const exportRe = /export\s+(?:const\s+\w+(?:\s*:\s*[\w<>[\], ]+)?\s*=|default)\s*\{/;
+    const exportMatch = txt.match(exportRe);
+    const start = exportMatch
+      ? exportMatch.index + exportMatch[0].length - 1
+      : txt.indexOf('{');
     if (start < 0) throw new Error('no object found');
     let depth = 0, inStr = false, quote = '', escape = false, end = -1;
     for (let i = start; i < txt.length; i++) {
@@ -38,7 +74,14 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
       else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
     }
     if (end < 0) throw new Error('unbalanced braces');
-    const obj = JSON.parse(txt.slice(start, end + 1));
+    const raw = txt.slice(start, end + 1);
+    let obj;
+    try {
+      obj = JSON.parse(raw);
+    } catch {
+      // JS object literal syntax (single quotes, unquoted keys) — common in hand-authored .ts model files
+      obj = new Function('return (' + raw + ')')(); // eslint-disable-line no-new-func
+    }
     if (!obj || !obj.bones || !obj.shapes) throw new Error('not a puppet model');
     return obj;
   };
@@ -115,6 +158,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
     const [collapsed, setCollapsed] = useState(() => new Set());
     const [renameTarget, setRenameTarget] = useState(null); // {kind:'bone'|'shape', id} | null — F2 or ✎ opens
     const [reattachShapeId, setReattachShapeId] = useState(null); // shape id currently choosing a new bone, or null
+    const [groupPopup, setGroupPopup] = useState(null); // {mode:'new'|'rename', oldName, name, color, onSet}
     const svgRef = useRef(null); const drag = useRef(null);
     const toSvg = useSvgPointer(svgRef);
     const bones = model.bones, byId = {}; bones.forEach((b) => byId[b.id] = b);
@@ -123,6 +167,54 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
 
     const upBone = (id, patch) => setModel((m) => ({ ...m, bones: m.bones.map((b) => b.id === id ? { ...b, ...patch } : b) }));
     const upShape = (id, patch) => setModel((m) => ({ ...m, shapes: m.shapes.map((s) => s.id === id ? { ...s, ...patch } : s) }));
+
+    // merge group management
+    const allGroups = Array.from(new Set([...model.bones, ...(model.shapes || [])].map((n) => n.mergeGroup).filter(Boolean))).sort();
+    const groupZ = {};
+    const colorForGroup = (name) => (model.mergeGroupColors && model.mergeGroupColors[name]) || groupColor(name);
+    model.bones.forEach((b) => { if (boneMerges(b)) { const g = groupOfIn(model.bones, b); if (g) groupZ[g] = groupZ[g] == null ? (b.z || 0) : Math.min(groupZ[g], b.z || 0); } });
+    (model.shapes || []).forEach((s) => { const boneNode = model.bones.find((b) => b.id === s.bone); if (boneNode && shapeMerges(s, model.colors)) { const g = groupOfIn(model.bones, s); if (g) { const z = s.z != null ? s.z : (boneNode.z || 0); groupZ[g] = groupZ[g] == null ? z : Math.min(groupZ[g], z); } } });
+    const commitGroupPopup = () => {
+      const gp = groupPopup; if (!gp) return;
+      const name = (gp.name || '').trim(); if (!name) { setGroupPopup(null); return; }
+      if (gp.mode === 'new') {
+        setModel((m) => ({ ...m, mergeGroupColors: { ...(m.mergeGroupColors || {}), [name]: gp.color } }));
+        if (gp.onSet) gp.onSet(name);
+      } else if (name !== gp.oldName) {
+        setModel((m) => {
+          const colors = { ...(m.mergeGroupColors || {}) }; delete colors[gp.oldName]; colors[name] = gp.color;
+          return { ...m, bones: m.bones.map((b) => b.mergeGroup === gp.oldName ? { ...b, mergeGroup: name } : b), shapes: (m.shapes || []).map((s) => s.mergeGroup === gp.oldName ? { ...s, mergeGroup: name } : s), mergeGroupColors: colors };
+        });
+      } else {
+        setModel((m) => ({ ...m, mergeGroupColors: { ...(m.mergeGroupColors || {}), [name]: gp.color } }));
+      }
+      setGroupPopup(null);
+    };
+    const deleteGroup = (name) => {
+      if (!confirm('Delete group "' + name + '"? Its members become unjoined.')) return;
+      setModel((m) => {
+        const colors = { ...(m.mergeGroupColors || {}) }; delete colors[name];
+        return { ...m, bones: m.bones.map((b) => b.mergeGroup === name ? { ...b, mergeGroup: undefined } : b), shapes: (m.shapes || []).map((s) => s.mergeGroup === name ? { ...s, mergeGroup: undefined } : s), mergeGroupColors: colors };
+      });
+    };
+    const GroupPicker = ({ current, onSet }) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'rgba(255,255,255,0.5)', border: '2px solid #cfc7b4', borderRadius: 10, padding: 4 }}>
+        {allGroups.map((g) => (
+          <div key={g} onClick={() => onSet(g === current ? undefined : g)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', borderRadius: 7, cursor: 'pointer', background: current === g ? 'rgba(194,90,58,0.16)' : 'transparent' }}>
+            <span style={{ width: 13, height: 13, borderRadius: '50%', background: colorForGroup(g), flex: 'none', border: '1px solid rgba(0,0,0,0.18)', display: 'inline-block' }} />
+            <span style={{ fontSize: 14, flex: 1 }}>{g}</span>
+            <span title="Render z of group" style={{ fontSize: 11, opacity: 0.55, flex: 'none' }}>z{groupZ[g] != null ? groupZ[g] : 0}</span>
+            {current === g && <span style={{ fontSize: 13, opacity: 0.6 }}>✓</span>}
+            <span onClick={(e) => { e.stopPropagation(); setGroupPopup({ mode: 'rename', oldName: g, name: g, color: colorForGroup(g) }); }} title="Rename" style={{ fontSize: 12, opacity: 0.45, cursor: 'pointer', flex: 'none' }}>✎</span>
+            <span onClick={(e) => { e.stopPropagation(); deleteGroup(g); }} title="Delete group" style={{ fontSize: 12, opacity: 0.45, cursor: 'pointer', flex: 'none' }}>🗑</span>
+          </div>
+        ))}
+        <div onClick={() => setGroupPopup({ mode: 'new', oldName: null, name: '', color: GROUP_PALETTE[allGroups.length % GROUP_PALETTE.length], onSet })} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', borderRadius: 7, cursor: 'pointer', background: 'transparent' }}>
+          <span style={{ width: 13, textAlign: 'center', fontSize: 14, opacity: 0.6, flex: 'none' }}>+</span>
+          <span style={{ fontSize: 14, flex: 1, opacity: 0.75 }}>new group…</span>
+        </div>
+      </div>
+    );
     // Re-parent a shape onto a different bone, OR group it under another
     // shape (e.g. a decoration that should ride along with "cloth"). Either
     // way its points/center get converted from the old bone's local frame
@@ -323,7 +415,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
                   ) : <span style={{ width: 13, flex: 'none' }}></span>}
                   <span style={{ flex: 'none' }}>{rb.icon || boneIcon(r.id)}</span>
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rb.label || r.id}{boneSide(r.id) ? ' ' + boneSide(r.id) : ''}</span>
-                  {model.merge && rb.drawAs === 'limb' && boneMerges(rb) && <span style={{ marginLeft: 'auto', fontSize: 12, opacity: 0.5, flex: 'none' }} title={'Seamless layer: ' + layerOf(bones, r.id)}>{layerOf(bones, r.id) === 'front' ? '△' : '▽'}</span>}
+                  {model.merge && boneMerges(rb) && (() => { const g = groupOfIn(bones, rb); return g ? <span style={{ marginLeft: 'auto', width: 10, height: 10, borderRadius: '50%', background: groupColor(g), flex: 'none', border: '1px solid rgba(0,0,0,0.2)', display: 'inline-block' }} title={'Merge group: ' + g} /> : <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.4, flex: 'none' }} title="Seamless, no named group">{layerOf(bones, r.id) === 'front' ? '△' : '▽'}</span>; })()}
                 </div>
               );
             }
@@ -338,7 +430,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
                 ) : <span style={{ width: 13, flex: 'none' }}></span>}
                 <span style={{ flex: 'none' }}>{rs.icon || shapeIcon(rs)}</span>
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: rs.hidden ? 0.45 : 1 }}>{rs.label || r.id}</span>
-                {rsMerged && <span style={{ marginLeft: 'auto', fontSize: 12, opacity: 0.5, flex: 'none' }} title={'Seamless layer: ' + layerOf(bones, rs)}>{layerOf(bones, rs) === 'front' ? '△' : '▽'}</span>}
+                {rsMerged && (() => { const g = groupOfIn(bones, rs); return g ? <span style={{ marginLeft: 'auto', width: 10, height: 10, borderRadius: '50%', background: groupColor(g), flex: 'none', border: '1px solid rgba(0,0,0,0.2)', display: 'inline-block' }} title={'Merge group: ' + g} /> : <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.4, flex: 'none' }} title="Seamless, no named group">{layerOf(bones, rs) === 'front' ? '△' : '▽'}</span>; })()}
                 <span onClick={(e) => { e.stopPropagation(); toggleHidden(r.id); }} title={rs.hidden ? 'Hidden — click to show' : 'Visible — click to hide'} style={{ fontSize: 12, opacity: 0.6, cursor: 'pointer', flex: 'none', marginLeft: rsMerged ? 5 : 'auto' }}>{rs.hidden ? '🚫' : '👁️'}</span>
               </div>
             );
@@ -417,19 +509,11 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
               {sb.drawAs === 'limb' && <div style={{ marginBottom: 8 }}><div style={{ opacity: 0.7, fontSize: 15 }}>Thickness {sb.width || 30}</div><input type="range" min="8" max="60" value={sb.width || 30} onChange={(e) => upBone(sb.id, { width: +e.target.value })} style={{ width: '100%', accentColor: ACCENT }} /></div>}
               {model.merge && sb.drawAs === 'limb' && (
                 <div style={{ marginTop: 14, paddingTop: 12, borderTop: '2px dashed #d8d0bd' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.55, letterSpacing: 0.5, marginBottom: 7 }}>SEAMLESS</div>
-                  {boneMerges(sb) ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <button onClick={() => upBone(sb.id, { merge: false })} style={{ ...btn(true, 0), fontSize: 15, padding: '3px 10px' }}>joins body</button>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <button onClick={() => upBone(sb.id, { layer: 'back' })} style={{ ...btn(layerOf(bones, sb.id) === 'back', 0), fontSize: 14, padding: '2px 9px' }}>under cloth</button>
-                        <button onClick={() => upBone(sb.id, { layer: 'front' })} style={{ ...btn(layerOf(bones, sb.id) === 'front', 1), fontSize: 14, padding: '2px 9px' }}>over cloth</button>
-                        {sb.layer && <button onClick={() => upBone(sb.id, { layer: null })} title="Back to automatic" style={{ ...btn(false, 0), fontSize: 13, padding: '2px 7px' }}>auto</button>}
-                      </div>
-                    </div>
-                  ) : (
-                    <button onClick={() => upBone(sb.id, { merge: true })} style={{ ...btn(false, 0), fontSize: 15, padding: '3px 10px' }}>stays outlined</button>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.55, letterSpacing: 0.5 }}>SEAMLESS</span>
+                    <button onClick={() => upBone(sb.id, boneMerges(sb) ? { merge: false, mergeGroup: undefined } : { merge: true })} style={{ ...btn(boneMerges(sb), 0), fontSize: 13, padding: '2px 11px', borderRadius: 20 }}>{boneMerges(sb) ? 'on' : 'off'}</button>
+                  </div>
+                  {boneMerges(sb) && <GroupPicker current={sb.mergeGroup} onSet={(g) => upBone(sb.id, { mergeGroup: g })} />}
                 </div>
               )}
             </div>
@@ -462,7 +546,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
               {shp.kind === 'circle' && <div style={{ marginBottom: 10 }}><div style={{ opacity: 0.7, fontSize: 15 }}>Radius {shp.r || 5}</div><input type="range" min="3" max="120" value={shp.r || 5} onChange={(e) => upShape(shp.id, { r: +e.target.value })} style={{ width: '100%', accentColor: ACCENT }} /></div>}
               <div style={{ opacity: 0.7, fontSize: 15, marginBottom: 4 }}>Fill</div>
               <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-                {['skin', 'ink', 'hair', 'fur', 'none'].map((c) => <button key={c} onClick={() => upShape(shp.id, { fill: c })} style={{ ...btn(shp.fill === c, 0), fontSize: 14, padding: '2px 7px' }}>{c}</button>)}
+                {[...Object.keys(model.colors || {}), 'none'].map((c) => <button key={c} onClick={() => upShape(shp.id, { fill: c })} style={{ ...btn(shp.fill === c, 0), fontSize: 14, padding: '2px 7px' }}>{c}</button>)}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <span style={{ opacity: 0.7, fontSize: 15, width: 62 }}>Z-order</span>
@@ -472,19 +556,11 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
               </div>
               {model.merge && (
                 <div style={{ marginTop: 14, paddingTop: 12, borderTop: '2px dashed #d8d0bd' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.55, letterSpacing: 0.5, marginBottom: 7 }}>SEAMLESS</div>
-                  {shapeMerges(shp, model.colors) ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <button onClick={() => upShape(shp.id, { merge: false })} style={{ ...btn(true, 0), fontSize: 14, padding: '2px 9px' }}>joins body</button>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <button onClick={() => upShape(shp.id, { layer: 'back' })} style={{ ...btn(layerOf(bones, shp) === 'back', 0), fontSize: 14, padding: '2px 9px' }}>under cloth</button>
-                        <button onClick={() => upShape(shp.id, { layer: 'front' })} style={{ ...btn(layerOf(bones, shp) === 'front', 1), fontSize: 14, padding: '2px 9px' }}>over cloth</button>
-                        {shp.layer && <button onClick={() => upShape(shp.id, { layer: null })} title="Back to automatic" style={{ ...btn(false, 0), fontSize: 13, padding: '2px 7px' }}>auto</button>}
-                      </div>
-                    </div>
-                  ) : (
-                    <button onClick={() => upShape(shp.id, { merge: true })} style={{ ...btn(false, 0), fontSize: 14, padding: '2px 9px' }}>keeps own outline</button>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.55, letterSpacing: 0.5 }}>SEAMLESS</span>
+                    <button onClick={() => upShape(shp.id, shapeMerges(shp, model.colors) ? { merge: false, mergeGroup: undefined } : { merge: true })} style={{ ...btn(shapeMerges(shp, model.colors), 0), fontSize: 13, padding: '2px 11px', borderRadius: 20 }}>{shapeMerges(shp, model.colors) ? 'on' : 'off'}</button>
+                  </div>
+                  {shapeMerges(shp, model.colors) && <GroupPicker current={shp.mergeGroup} onSet={(g) => upShape(shp.id, { mergeGroup: g })} />}
                 </div>
               )}
               <div style={{ marginTop: 16, paddingTop: 13, borderTop: '2px solid #ded7c6' }}>
@@ -511,6 +587,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
         </div>
         <ElementNamePopup target={renameTarget} bones={bones} shapes={model.shapes || []} upBone={upBone} upShape={upShape} onClose={() => setRenameTarget(null)} />
         <ReattachPopup shapeId={reattachShapeId} shapes={model.shapes || []} bones={bones} boneIcon={boneIcon} shapeIcon={shapeIcon} onPick={(target) => reattachShape(reattachShapeId, target)} onClose={() => setReattachShapeId(null)} />
+        <GroupNamePopup state={groupPopup} setState={setGroupPopup} onCommit={commitGroupPopup} onClose={() => setGroupPopup(null)} />
       </div>
     );
   }
@@ -594,18 +671,64 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
     );
   }
 
-  // ============================= PALETTE MODE =============================
-  function PaletteMode({ model, setModel }) {
-    const swatch = (k, label) => (
-      <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
-        <input type="color" value={model.colors[k] || '#000000'} onChange={(e) => setModel((m) => ({ ...m, colors: { ...m.colors, [k]: e.target.value } }))}
-          style={{ width: 52, height: 52, border: '2px solid #a49d8b', borderRadius: 10, cursor: 'pointer', background: 'none', padding: 0 }} />
-        <div>
-          <div style={{ fontSize: 19, fontWeight: 700 }}>{label}</div>
-          <div style={{ fontSize: 14, opacity: 0.55, fontFamily: 'monospace' }}>{(model.colors[k] || '').toUpperCase()}</div>
+  function GroupNamePopup({ state, setState, onCommit, onClose }) {
+    if (!state) return null;
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } if (e.key === 'Enter') { e.preventDefault(); onCommit(); } }}>
+        <div style={{ width: 320, background: '#fdfaf3', border: '2px solid #a49d8b', borderRadius: 14, padding: 20, boxShadow: '0 12px 32px rgba(0,0,0,0.28)', fontFamily: UI, color: '#2c2b28' }} onPointerDown={(e) => e.stopPropagation()}>
+          <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 14 }}>{state.mode === 'new' ? 'New seam group' : 'Rename group'}</div>
+          <input autoFocus type="text" value={state.name} placeholder="e.g. armL"
+            onChange={(e) => setState((p) => ({ ...p, name: e.target.value }))}
+            style={{ width: '100%', fontFamily: UI, fontSize: 16, padding: '7px 10px', color: '#2c2b28', background: '#fff', border: '2px solid #a49d8b', borderRadius: 8, boxSizing: 'border-box', marginBottom: 16 }} />
+          <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 18 }}>
+            {GROUP_PALETTE.map((c) => (
+              <button key={c} onClick={() => setState((p) => ({ ...p, color: c }))}
+                style={{ width: 28, height: 28, borderRadius: '50%', background: c, cursor: 'pointer', padding: 0, border: state.color === c ? '3px solid #2c2b28' : '2px solid rgba(0,0,0,0.15)' }} />
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <button onClick={onClose} style={{ ...btn(false, 0), fontSize: 15, padding: '5px 16px' }}>Cancel</button>
+            <button onClick={onCommit} style={{ ...btn(true, 0), fontSize: 16, padding: '5px 18px' }}>Done</button>
+          </div>
         </div>
       </div>
     );
+  }
+
+  // ============================= PALETTE MODE =============================
+  const BUILTIN_COLORS = ['ink', 'skin', 'hair', 'fur'];
+  const colorLabel = (k) => k ? k.charAt(0).toUpperCase() + k.slice(1) : '';
+
+  function PaletteMode({ model, setModel }) {
+    const keys = Object.keys(model.colors || {});
+    const [selKey, setSelKey] = useState(keys[0] || null);
+    const [renameKey, setRenameKey] = useState(null);
+    const key = keys.includes(selKey) ? selKey : keys[0] || null;
+    const usedBy = (k) => (model.shapes || []).some((s) => s.fill === k);
+    const addColor = () => {
+      const name = (prompt('Color name?', 'color' + (keys.length + 1)) || '').trim();
+      if (!name || model.colors[name]) return;
+      setModel((m) => ({ ...m, colors: { ...m.colors, [name]: '#a49d8b' } }));
+      setSelKey(name);
+    };
+    const deleteColor = () => {
+      if (!key || BUILTIN_COLORS.includes(key)) return;
+      if (usedBy(key)) { alert('"' + key + '" is still used by a shape — reassign it first.'); return; }
+      setModel((m) => { const c = { ...m.colors }; delete c[key]; return { ...m, colors: c }; });
+      setSelKey(null);
+    };
+    const setHex = (k, hex) => setModel((m) => ({ ...m, colors: { ...m.colors, [k]: hex } }));
+    const renameColor = (oldKey, newKey) => {
+      if (!newKey || newKey === oldKey || model.colors[newKey]) return;
+      setModel((m) => {
+        const entries = Object.keys(m.colors).map((k) => [k === oldKey ? newKey : k, m.colors[k]]);
+        const shapes = (m.shapes || []).map((s) => ({ ...s, fill: s.fill === oldKey ? newKey : s.fill }));
+        return { ...m, colors: Object.fromEntries(entries), shapes };
+      });
+      if (selKey === oldKey) setSelKey(newKey);
+    };
     return (
       <div style={{ position: 'absolute', inset: 0, display: 'flex', fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", color: '#2c2b28' }}>
         <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -614,12 +737,48 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
           </div>
         </div>
         <div style={{ width: 300, padding: '18px 22px', overflowY: 'auto', borderLeft: '2px solid #ded7c6', background: 'rgba(255,255,255,0.4)' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Palette</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>Palette</div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <IBtn label="＋" title="Add color" onClick={addColor} />
+              <IBtn label="✎" title="Rename color" onClick={() => setRenameKey(key)} disabled={!key} />
+              <IBtn label="－" title="Delete color" onClick={deleteColor} disabled={!key || BUILTIN_COLORS.includes(key)} danger />
+            </div>
+          </div>
           <div style={{ fontSize: 15, opacity: 0.6, marginBottom: 18 }}>Applies everywhere this color is used — bones, shapes, outlines.</div>
-          {swatch('ink', 'Ink (outline)')}
-          {swatch('skin', 'Skin')}
-          {swatch('hair', 'Hair')}
-          {swatch('fur', 'Fur / cloth')}
+          {keys.map((k) => (
+            <div key={k} onClick={() => setSelKey(k)} style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14, cursor: 'pointer', padding: '4px 6px', borderRadius: 8, background: k === key ? 'rgba(194,90,58,0.14)' : 'transparent' }}>
+              <input type="color" value={model.colors[k] || '#000000'} onClick={(e) => e.stopPropagation()} onChange={(e) => setHex(k, e.target.value)}
+                style={{ width: 52, height: 52, border: '2px solid #a49d8b', borderRadius: 10, cursor: 'pointer', background: 'none', padding: 0 }} />
+              <div>
+                <div style={{ fontSize: 19, fontWeight: 700 }}>{colorLabel(k)}</div>
+                <div style={{ fontSize: 14, opacity: 0.55, fontFamily: 'monospace' }}>{(model.colors[k] || '').toUpperCase()}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <ColorNamePopup id={renameKey} colors={model.colors} onRename={renameColor} onClose={() => setRenameKey(null)} />
+      </div>
+    );
+  }
+
+  function ColorNamePopup({ id, colors, onRename, onClose }) {
+    const [draft, setDraft] = useState(colorLabel(id));
+    useEffect(() => { setDraft(colorLabel(id)); }, [id]);
+    if (!id || !colors[id]) return null;
+    const commit = () => { const name = draft.trim().toLowerCase(); if (name && name !== id && !colors[name]) onRename(id, name); };
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        onPointerDown={(e) => { if (e.target === e.currentTarget) { commit(); onClose(); } }}
+        onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); setDraft(colorLabel(id)); onClose(); } if (e.key === 'Enter') { e.preventDefault(); commit(); onClose(); } }}>
+        <div style={{ width: 320, background: '#fdfaf3', border: '2px solid #a49d8b', borderRadius: 14, padding: 20, boxShadow: '0 12px 32px rgba(0,0,0,0.28)', fontFamily: UI, color: '#2c2b28' }} onPointerDown={(e) => e.stopPropagation()}>
+          <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 14 }}>Rename color</div>
+          <div style={{ opacity: 0.7, fontSize: 15, marginBottom: 4 }}>Name</div>
+          <input autoFocus type="text" value={draft} onChange={(e) => setDraft(e.target.value)}
+            style={{ width: '100%', fontFamily: UI, fontSize: 16, padding: '7px 10px', color: '#2c2b28', background: '#fff', border: '2px solid #a49d8b', borderRadius: 8, boxSizing: 'border-box', marginBottom: 16 }} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={() => { commit(); onClose(); }} style={{ ...btn(true, 0), fontSize: 16, padding: '5px 18px' }}>Done</button>
+          </div>
         </div>
       </div>
     );
@@ -712,8 +871,10 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
 
     const setKey = () => { if (!act) return; setModel((m) => { const a = clone(m.actions[actId]); const eps = 0.02; const pose = clone(working); let i = a.keys.findIndex((k) => Math.abs(k.t - time) < eps); if (i >= 0) a.keys[i] = { t: +time.toFixed(2), pose }; else { a.keys.push({ t: +time.toFixed(2), pose }); a.keys.sort((x, y) => x.t - y.t); } return { ...m, actions: { ...m.actions, [actId]: a } }; }); };
     const delKey = () => { if (!act) return; setModel((m) => { const a = clone(m.actions[actId]); if (a.keys.length <= 1) return m; let idx = selKey; if (idx < 0 || idx >= a.keys.length) { let bd = 1e9, best = -1; a.keys.forEach((k, i) => { const dd = Math.abs(k.t - time); if (dd < bd) { bd = dd; best = i; } }); idx = bd < 0.1 ? best : -1; } if (idx >= 0) a.keys.splice(idx, 1); return { ...m, actions: { ...m.actions, [actId]: a } }; }); setSelKey(-1); };
+    const [renamePopupId, setRenamePopupId] = useState(null);
     const addAction = () => { const name = (prompt('Action name?', 'action' + (ids.length + 1)) || '').trim(); if (!name) return; setModel((m) => ({ ...m, actions: { ...m.actions, [name]: { dur: 1.5, loop: true, keys: [{ t: 0, pose: { angles: {}, root: {} } }] } } })); setActId(name); timeRef.current = 0; setTime(0); };
     const delAction = () => { if (!actId) return; setModel((m) => { const a = { ...m.actions }; delete a[actId]; return { ...m, actions: a }; }); const rem = ids.filter((x) => x !== actId); setActId(rem[0] || null); };
+    const renameAction = (id) => { if (id || actId) setRenamePopupId(id || actId); };
     const setDur = (v) => setModel((m) => { const a = m.actions[actId]; const old = a.dur || 1; const f = old > 0 ? v / old : 1; const keys = (a.keys || []).map((k) => ({ ...k, t: +Math.max(0, Math.min(v, k.t * f)).toFixed(2) })); return { ...m, actions: { ...m.actions, [actId]: { ...a, dur: v, keys } } }; });
     const toggleLoop = () => setModel((m) => ({ ...m, actions: { ...m.actions, [actId]: { ...m.actions[actId], loop: !m.actions[actId].loop } } }));
     // Shape visibility, kept per-keyframe (a step curve): toggling writes into
@@ -805,6 +966,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
     const curAngle = selBone ? ((pose.angles && pose.angles[selBone] != null) ? pose.angles[selBone] : (byId[selBone] ? byId[selBone].angle || 0 : 0)) : 0;
 
     return (
+      <>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", color: '#2c2b28' }}>
         {/* ---- element tree ---- */}
         <div style={{ width: 220, flex: 'none', padding: '12px 10px 20px', overflowY: 'auto', borderRight: '2px solid #ded7c6', background: 'rgba(255,255,255,0.4)' }}>
@@ -888,10 +1050,11 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
         <div style={{ width: 240, padding: '14px 18px', overflowY: 'auto', borderLeft: '2px solid #ded7c6', background: 'rgba(255,255,255,0.4)' }}>
           <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Actions</div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, marginBottom: 12 }}>
-            {ids.map((id, i) => <button key={id} onClick={() => { setPlaying(false); setActId(id); setSelKey(-1); timeRef.current = 0; setTime(0); }} style={{ ...btn(id === actId, i), textAlign: 'left', whiteSpace: 'nowrap' }}>{actions[id].loop ? '🔁' : ''}{actionIcon(id)}  {id}</button>)}
+            {ids.map((id, i) => <button key={id} onClick={() => { setPlaying(false); setActId(id); setSelKey(-1); timeRef.current = 0; setTime(0); }} onDoubleClick={() => renameAction(id)} title="Double-click to rename" style={{ ...btn(id === actId, i), textAlign: 'left', whiteSpace: 'nowrap' }}>{actions[id].loop ? '🔁' : ''}{actions[id].icon || actionIcon(id)}  {id}</button>)}
           </div>
           <Grp label="Action">
             <IBtn label="＋" title="Add action" onClick={addAction} />
+            <IBtn label="✎" title="Rename / change icon" onClick={() => renameAction(actId)} disabled={!actId} />
             <IBtn label="－" title="Delete action" onClick={delAction} disabled={!actId} danger />
           </Grp>
           {act && (selBoneObj || selShapeObj) && (
@@ -927,6 +1090,50 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
           )}
           {!act && <div style={{ fontSize: 15, opacity: 0.55, marginTop: 16 }}>Pick or add an action to start posing.</div>}
           {act && !selBoneObj && !selShapeObj && <div style={{ fontSize: 14, opacity: 0.5, marginTop: 16, lineHeight: 1.5 }}>Select an element in the tree, or drag a joint on the canvas.</div>}
+        </div>
+      </div>
+      <ActionNamePopup id={renamePopupId} actions={actions} setModel={setModel} actId={actId} setActId={setActId} onClose={() => setRenamePopupId(null)} />
+      </>
+    );
+  }
+
+  function ActionNamePopup({ id, actions, setModel, actId, setActId, onClose }) {
+    const [draft, setDraft] = useState(id || '');
+    useEffect(() => { setDraft(id || ''); }, [id]);
+    if (!id || !actions[id]) return null;
+    const act = actions[id];
+    const icons = ['🧍', '🚶', '🏃', '🤾', '👋', '🙆', '🛌', '🤸', '💃', '🎯', '🔁'];
+    const commitName = () => {
+      const name = draft.trim();
+      if (!name || name === id || actions[name]) { setDraft(id); return; }
+      setModel((m) => {
+        const entries = Object.keys(m.actions).map((k) => [k === id ? name : k, m.actions[k]]);
+        return { ...m, actions: Object.fromEntries(entries) };
+      });
+      if (actId === id) setActId(name);
+    };
+    const setIcon = (icon) => setModel((m) => ({ ...m, actions: { ...m.actions, [id]: { ...m.actions[id], icon } } }));
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        onPointerDown={(e) => { if (e.target === e.currentTarget) { commitName(); onClose(); } }}
+        onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); setDraft(id); onClose(); } if (e.key === 'Enter') { e.preventDefault(); commitName(); onClose(); } }}>
+        <div style={{ width: 320, background: '#fdfaf3', border: '2px solid #a49d8b', borderRadius: 14, padding: 20, boxShadow: '0 12px 32px rgba(0,0,0,0.28)', fontFamily: UI, color: '#2c2b28' }} onPointerDown={(e) => e.stopPropagation()}>
+          <div style={{ fontSize: 19, fontWeight: 700, marginBottom: 14 }}>Rename action</div>
+          <div style={{ opacity: 0.7, fontSize: 15, marginBottom: 4 }}>Name</div>
+          <input autoFocus type="text" value={draft} onChange={(e) => setDraft(e.target.value)}
+            style={{ width: '100%', fontFamily: UI, fontSize: 16, padding: '7px 10px', color: '#2c2b28', background: '#fff', border: '2px solid #a49d8b', borderRadius: 8, boxSizing: 'border-box', marginBottom: 16 }} />
+          <div style={{ opacity: 0.7, fontSize: 15, marginBottom: 4 }}>Icon</div>
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 8 }}>
+            {icons.map((ic) => <button key={ic} onClick={() => setIcon(ic)} style={{ ...btn((act.icon || actionIcon(id)) === ic, 0), fontSize: 17, padding: '4px 9px' }}>{ic}</button>)}
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 18 }}>
+            <input type="text" value={act.icon || ''} placeholder="custom emoji" onChange={(e) => setIcon(e.target.value.slice(0, 4))}
+              style={{ width: 130, fontFamily: UI, fontSize: 15, padding: '5px 9px', color: '#2c2b28', background: '#fff', border: '2px solid #a49d8b', borderRadius: 8 }} />
+            {act.icon && <button onClick={() => setIcon(null)} style={{ ...btn(false, 0), fontSize: 13, padding: '4px 9px' }}>reset icon</button>}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={() => { commitName(); onClose(); }} style={{ ...btn(true, 0), fontSize: 16, padding: '5px 18px' }}>Done</button>
+          </div>
         </div>
       </div>
     );
@@ -1025,19 +1232,38 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
     const { model, setModel, undo, redo, canUndo, canRedo } = useHistory(() => { try { const s = localStorage.getItem(STORE); if (s) return JSON.parse(s); } catch (e) {} return clone(DEFAULT); });
     useEffect(() => { try { localStorage.setItem(STORE, JSON.stringify(model)); } catch (e) {} }, [model]);
 
-    // ---- file-backed auto-save ----
-    const [filePath, setFilePathRaw] = useState(() => { try { return localStorage.getItem(FILEPATH_STORE) || null; } catch (e) { return null; } });
-    const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+    // ---- file source: either a server path or a File System Access handle ----
+    const [fileHandle, setFileHandle] = useState(null);   // FileSystemFileHandle | null
+    const [serverPath, setServerPath] = useState(null);   // absolute path string | null
+    const [recentFiles, setRecentFiles] = useState([]);
+    const [projectModels, setProjectModels] = useState([]); // [{name, path}] from /api/puppet/list
+    const [saveStatus, setSaveStatus] = useState('idle');
+    const [showLibrary, setShowLibrary] = useState(false);
     const saveTimerRef = useRef(null);
-    const filePathRef = useRef(filePath);
-    useEffect(() => { filePathRef.current = filePath; }, [filePath]);
+    const fileHandleRef = useRef(fileHandle);
+    const serverPathRef = useRef(serverPath);
+    useEffect(() => { fileHandleRef.current = fileHandle; }, [fileHandle]);
+    useEffect(() => { serverPathRef.current = serverPath; }, [serverPath]);
 
-    const setFilePath = (p) => {
-      setFilePathRaw(p);
-      try { if (p) localStorage.setItem(FILEPATH_STORE, p); else localStorage.removeItem(FILEPATH_STORE); } catch (e) {}
-    };
+    // load IDB handles + project model list on mount
+    useEffect(() => { loadRecentHandles().then(setRecentFiles); }, []);
+    useEffect(() => {
+      fetch('/api/puppet/list').then((r) => r.json()).then((d) => { if (d.ok) setProjectModels(d.models); }).catch(() => {});
+    }, []);
 
-    const saveToFile = useCallback(async (m, path) => {
+    const saveToHandle = useCallback(async (m, handle) => {
+      if (!handle) return;
+      setSaveStatus('saving');
+      try {
+        const writable = await handle.createWritable();
+        await writable.write(modelToJs(m));
+        await writable.close();
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } catch (e) { setSaveStatus('error'); console.error('Save failed:', e); }
+    }, []);
+
+    const saveToServer = useCallback(async (m, path) => {
       if (!path) return;
       setSaveStatus('saving');
       try {
@@ -1045,37 +1271,76 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
         if (!res.ok) throw new Error(await res.text());
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
-      } catch (e) {
-        setSaveStatus('error');
-        console.error('Auto-save failed:', e);
-      }
+      } catch (e) { setSaveStatus('error'); console.error('Save failed:', e); }
     }, []);
 
-    // debounced auto-save: 1.2s after last change
-    useEffect(() => {
-      if (!filePath) return;
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(() => saveToFile(model, filePath), 1200);
-      return () => clearTimeout(saveTimerRef.current);
-    }, [model, filePath, saveToFile]);
+    const saveNow = useCallback((m) => {
+      if (fileHandleRef.current) saveToHandle(m, fileHandleRef.current);
+      else if (serverPathRef.current) saveToServer(m, serverPathRef.current);
+    }, [saveToHandle, saveToServer]);
 
-    // load model from file path on first mount (or when path changes)
-    const loadedPathRef = useRef(null);
+    // debounced auto-save
     useEffect(() => {
-      if (!filePath || filePath === loadedPathRef.current) return;
-      fetch('/api/puppet/load?' + new URLSearchParams({ path: filePath }))
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.ok) { const m = parseModelFromText(data.content); setModel(m); loadedPathRef.current = filePath; }
-          else { setSaveStatus('error'); }
-        })
-        .catch(() => setSaveStatus('error'));
-    }, [filePath]);
+      if (!fileHandle && !serverPath) return;
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => saveNow(model), 1200);
+      return () => clearTimeout(saveTimerRef.current);
+    }, [model, fileHandle, serverPath, saveNow]);
+
+    const applyHandle = async (handle) => {
+      setFileHandle(handle); setServerPath(null);
+      await persistHandle(handle);
+      setRecentFiles(await loadRecentHandles());
+    };
+
+    // open via File System Access API (external file)
+    const openFile = async () => {
+      if (!HAS_FS) { fileRef.current && fileRef.current.click(); return; }
+      try {
+        const [handle] = await window.showOpenFilePicker({ types: [{ description: 'Puppet model', accept: { 'text/javascript': ['.js', '.ts'] } }] });
+        const text = await (await handle.getFile()).text();
+        setModel(parseModelFromText(text));
+        await applyHandle(handle);
+      } catch (e) { if (e.name !== 'AbortError') alert('Could not open: ' + e.message); }
+    };
+
+    // open from library (server path)
+    const openFromLibrary = async (path) => {
+      try {
+        const res = await fetch('/api/puppet/load?' + new URLSearchParams({ path }));
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        setModel(parseModelFromText(data.content));
+        setServerPath(path); setFileHandle(null);
+        setShowLibrary(false);
+      } catch (e) { alert('Could not load: ' + e.message); }
+    };
+
+    const saveAs = async () => {
+      if (!HAS_FS) { exportModel(); return; }
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: (fileHandle?.name) || (serverPath?.split('/').pop()) || ((model.name || 'puppet-model').replace(/\s+/g, '-').toLowerCase() + '.js'),
+          types: [{ description: 'Puppet model', accept: { 'text/javascript': ['.js'] } }],
+        });
+        await saveToHandle(model, handle);
+        await applyHandle(handle);
+      } catch (e) { if (e.name !== 'AbortError') alert('Could not save: ' + e.message); }
+    };
+
+    const openRecent = async (entry) => {
+      try {
+        const perm = await entry.handle.queryPermission({ mode: 'readwrite' });
+        if (perm !== 'granted' && await entry.handle.requestPermission({ mode: 'readwrite' }) !== 'granted') return;
+        const text = await (await entry.handle.getFile()).text();
+        setModel(parseModelFromText(text));
+        await applyHandle(entry.handle);
+      } catch (e) { alert('Could not open: ' + e.message); }
+    };
 
     // ---- ui state ----
     const [mode, setMode] = useState(props.startMode || 'rig');
     const [fileMenuOpen, setFileMenuOpen] = useState(false);
-    const [linkPopupOpen, setLinkPopupOpen] = useState(false);
     const [helpOpen, setHelpOpen] = useState(false);
     const fileMenuRef = useRef(null);
     const fileRef = useRef(null);
@@ -1117,44 +1382,55 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
         const k = e.key.toLowerCase();
         if (k === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
         else if (k === 'y') { e.preventDefault(); redo(); }
-        else if (k === 's') { e.preventDefault(); if (filePathRef.current) saveToFile(model, filePathRef.current); else exportModel(); }
+        else if (k === 'o') { e.preventDefault(); openFile(); }
+        else if (k === 'l') { e.preventDefault(); setShowLibrary((v) => !v); }
+        else if (k === 's') { e.preventDefault(); if (e.shiftKey) saveAs(); else if (fileHandleRef.current || serverPathRef.current) saveNow(model); else saveAs(); }
       };
       window.addEventListener('keydown', onKey);
       return () => window.removeEventListener('keydown', onKey);
     });
 
-    const saveIndicator = filePath
+    const hasFile = !!(fileHandle || serverPath);
+    const saveIndicator = hasFile
       ? saveStatus === 'saving' ? { text: '● Saving…', color: '#b0955a' }
       : saveStatus === 'saved'  ? { text: '✓ Saved',   color: '#4a8c5c' }
       : saveStatus === 'error'  ? { text: '⚠ Error',   color: '#a23b28' }
       : { text: '● Auto-save on', color: '#4a8c5c' }
-      : { text: 'No file linked', color: '#a49d8b' };
+      : { text: 'unsaved', color: '#a49d8b' };
 
-    const fileName = filePath ? filePath.split('/').pop() : null;
+    const fileName = fileHandle ? fileHandle.name : serverPath ? serverPath.split('/').pop() : null;
 
     return (
       <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(circle at 50% 36%, #faf7f0 0%, ' + PAPER + ' 62%, #ece5d6 100%)', overflow: 'hidden', fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
         <div style={{ position: 'relative', height: 54, borderBottom: '2px solid #ded7c6', background: 'rgba(255,255,255,0.5)', zIndex: 40 }}>
           <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button onClick={() => setShowLibrary((v) => !v)} style={{ ...btn(showLibrary, 0), fontSize: 17 }} title="Model library (⌘L)">📚</button>
             <div ref={fileMenuRef} style={{ position: 'relative' }}>
-              <button onClick={() => setFileMenuOpen((v) => !v)} style={{ ...btn(fileMenuOpen, 0), fontSize: 19, fontWeight: 700 }}>File ▾</button>
+              <button onClick={() => setFileMenuOpen((v) => !v)} style={{ ...btn(fileMenuOpen, 1), fontSize: 19, fontWeight: 700 }}>File ▾</button>
               {fileMenuOpen && (
-                <div style={{ position: 'absolute', top: '115%', left: 0, background: '#fffdf8', border: '2px solid #a49d8b', borderRadius: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.18)', padding: 6, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 210, zIndex: 50 }}>
-                  <button onClick={() => { setFileMenuOpen(false); setLinkPopupOpen(true); }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>{filePath ? '📎 Change linked file…' : '📎 Link to file…'}</button>
-                  {filePath && <button onClick={() => { setFileMenuOpen(false); saveToFile(model, filePath); }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>💾 Save now (⌘S)</button>}
-                  {filePath && <button onClick={() => { setFileMenuOpen(false); if (confirm('Unlink from file? Auto-save will stop (model stays in localStorage).')) setFilePath(null); }} style={{ fontFamily: UI, fontSize: 15, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#a49d8b' }}>✕ Unlink file</button>}
+                <div style={{ position: 'absolute', top: '115%', left: 0, background: '#fffdf8', border: '2px solid #a49d8b', borderRadius: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.18)', padding: 6, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 230, zIndex: 50 }}>
+                  <button onClick={() => { setFileMenuOpen(false); openFile(); }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>📂 Open… (⌘O)</button>
+                  <button onClick={() => { setFileMenuOpen(false); saveAs(); }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>💾 Save As… (⇧⌘S)</button>
+                  {hasFile && <button onClick={() => { setFileMenuOpen(false); saveNow(model); }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>💾 Save now (⌘S)</button>}
+                  {hasFile && <button onClick={() => { setFileMenuOpen(false); if (confirm('Close file? Auto-save will stop.')) { setFileHandle(null); setServerPath(null); } }} style={{ fontFamily: UI, fontSize: 15, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#a49d8b' }}>✕ Close file</button>}
+                  {recentFiles.length > 0 && <div style={{ height: 1, background: '#e8e0d0', margin: '3px 6px' }} />}
+                  {recentFiles.length > 0 && <div style={{ fontFamily: UI, fontSize: 11, fontWeight: 700, opacity: 0.45, letterSpacing: 0.5, padding: '2px 10px' }}>RECENT</div>}
+                  {recentFiles.map((r) => (
+                    <button key={r.name} onClick={() => { setFileMenuOpen(false); openRecent(r); }} style={{ fontFamily: UI, fontSize: 15, textAlign: 'left', padding: '5px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: r.name === fileHandle?.name ? '#c25a3a' : '#2c2b28', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 226 }} title={r.name}>
+                      {r.name === fileHandle?.name ? '● ' : '○ '}{r.name}
+                    </button>
+                  ))}
                   <div style={{ height: 1, background: '#e8e0d0', margin: '3px 6px' }} />
-                  <button onClick={() => { exportModel(); setFileMenuOpen(false); }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>⬇ Export copy…</button>
-                  <button onClick={() => { fileRef.current && fileRef.current.click(); setFileMenuOpen(false); }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>📂 Import from file…</button>
+                  <button onClick={() => { setFileMenuOpen(false); if (confirm('New puppet? Unsaved changes will be lost.')) { setModel(clone(DEFAULT)); setFileHandle(null); } }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>✦ New puppet</button>
+                  <button onClick={() => { exportModel(); setFileMenuOpen(false); }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>⬇ Download copy…</button>
                   <div style={{ height: 1, background: '#e8e0d0', margin: '3px 6px' }} />
                   <button onClick={renameModel} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>✎ Rename…</button>
                   <button onClick={() => { setFileMenuOpen(false); setHelpOpen(true); }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#2c2b28' }}>❓ Shortcuts…</button>
-                  <button onClick={() => { setFileMenuOpen(false); if (confirm('Reset to the default puppet? Unsaved changes will be lost.')) setModel(clone(DEFAULT)); }} style={{ fontFamily: UI, fontSize: 16, textAlign: 'left', padding: '7px 10px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: 7, color: '#a23b28' }}>⟲ Reset to default</button>
                 </div>
               )}
             </div>
             <span style={{ fontSize: 16, opacity: 0.75, maxWidth: 160, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.name || 'Untitled puppet'}</span>
-            <span style={{ fontSize: 13, color: saveIndicator.color, whiteSpace: 'nowrap', cursor: filePath ? 'default' : 'pointer' }} onClick={() => !filePath && setLinkPopupOpen(true)} title={filePath || 'Click to link a file for auto-save'}>
+            <span style={{ fontSize: 13, color: saveIndicator.color, whiteSpace: 'nowrap', cursor: hasFile ? 'default' : 'pointer' }} onClick={() => !hasFile && setShowLibrary(true)} title={fileName || 'Click to open library'}>
               {saveIndicator.text}{fileName ? <span style={{ opacity: 0.6 }}> · {fileName}</span> : null}
             </span>
             <span style={{ width: 1, height: 22, background: '#cfc7b4' }}></span>
@@ -1175,7 +1451,40 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, layerOf, DEF
           {mode === 'rig' ? <RigMode model={model} setModel={setModel} /> : mode === 'palette' ? <PaletteMode model={model} setModel={setModel} /> : <ActionMode model={model} setModel={setModel} />}
         </div>
         <ShortcutsPopup open={helpOpen} onClose={() => setHelpOpen(false)} />
-        <LinkFilePopup open={linkPopupOpen} currentPath={filePath} model={model} onLink={(p) => { setFilePath(p); loadedPathRef.current = null; setLinkPopupOpen(false); }} onClose={() => setLinkPopupOpen(false)} />
+        {showLibrary && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.38)', zIndex: 100, display: 'flex', alignItems: 'stretch' }}
+            onPointerDown={(e) => { if (e.target === e.currentTarget) setShowLibrary(false); }}>
+            <div style={{ width: 340, background: '#fdfaf3', borderRight: '2px solid #ded7c6', display: 'flex', flexDirection: 'column', fontFamily: UI, overflowY: 'auto' }}>
+              <div style={{ padding: '18px 20px 10px', borderBottom: '2px solid #ded7c6', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#2c2b28' }}>Model Library</div>
+                <button onClick={() => setShowLibrary(false)} style={{ ...btn(false, 0), fontSize: 18, padding: '2px 8px', opacity: 0.5 }}>✕</button>
+              </div>
+              <div style={{ padding: '10px 12px', flex: 1 }}>
+                {projectModels.length === 0 && (
+                  <div style={{ fontSize: 14, opacity: 0.5, padding: '12px 8px' }}>No models found. Start the dev server to scan the project.</div>
+                )}
+                {projectModels.map((m) => {
+                  const active = serverPath === m.path || fileHandle?.name === m.name;
+                  return (
+                    <button key={m.path} onClick={() => openFromLibrary(m.path)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '9px 12px', border: 'none', borderRadius: 9, cursor: 'pointer', background: active ? 'rgba(194,90,58,0.13)' : 'transparent', marginBottom: 2, fontFamily: UI }}>
+                      <span style={{ fontSize: 22, flex: 'none' }}>🧸</span>
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontSize: 16, fontWeight: active ? 700 : 500, color: active ? '#c25a3a' : '#2c2b28', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.modelName || m.name.replace(/\.(js|ts)$/, '')}</div>
+                        <div style={{ fontSize: 11, opacity: 0.45, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
+                      </div>
+                      {active && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#c25a3a', fontWeight: 700, flex: 'none' }}>editing</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ padding: '10px 12px', borderTop: '2px solid #ded7c6', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <button onClick={() => { setShowLibrary(false); openFile(); }} style={{ ...btn(false, 0), fontSize: 15, textAlign: 'left', padding: '7px 12px' }}>📂 Open external file…</button>
+                <button onClick={() => { setShowLibrary(false); if (confirm('New puppet? Unsaved changes will be lost.')) { setModel(clone(DEFAULT)); setFileHandle(null); setServerPath(null); } }} style={{ ...btn(false, 1), fontSize: 15, textAlign: 'left', padding: '7px 12px' }}>✦ New puppet</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

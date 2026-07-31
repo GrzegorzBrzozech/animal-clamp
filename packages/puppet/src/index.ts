@@ -1,6 +1,6 @@
 export { Puppet } from './Puppet';
 export type { PuppetProps } from './Puppet';
-export { computeWorld, samplePose, blend, polyPath, RAD, boneMerges, shapeMerges, layerOf, resolveLayer } from './engine';
+export { computeWorld, samplePose, blend, polyPath, RAD, boneMerges, shapeMerges, layerOf, resolveLayer, groupOf, groupOfIn } from './engine';
 export type { PuppetModel, Bone, Shape, Pose, PuppetAction, PuppetColors, WorldNode, WorldMap } from './types';
 
 import type { PuppetModel } from './types';
@@ -8,20 +8,21 @@ import type { PuppetModel } from './types';
 export const DEFAULT_PUPPET: PuppetModel = {
   name: 'Caveman-1.0',
   viewBox: '-200 -40 400 560',
-  colors: { ink: '#3b3a37', skin: '#e9e2d2', hair: '#38372e', fur: '#8f8676' },
+  colors: { ink: '#3b3a37', skin: '#e9e2d2', hair: '#38372e', fur: '#8f8676', wood: '#8a5a34', stone: '#6b6b6b' },
   merge: true,
+  mergeGroupColors: { head: '#2f6fd0', body: '#c25a3a', armL: '#3a8f5c', armR: '#a0522d', legL: '#8659b5', legR: '#c98a1f' },
   bones: [
-    { id: 'root', parent: null, x: 4, y: 276, angle: 0, len: 0, z: 0, merge: true, drawAs: 'limb', width: 28, layer: 'back', icon: '💪' },
-    { id: 'head', parent: 'root', x: 2, y: -215, angle: 0, len: 0, z: 20, merge: false, drawAs: null, width: 22 },
-    { id: 'armUpperL', parent: 'root', x: -83, y: -143, angle: 140.5, len: 80, drawAs: 'limb', width: 52, z: 6, endCap: false, merge: true, layer: null },
-    { id: 'armLowerL', parent: 'armUpperL', x: 3, y: -2, angle: -53.2, len: 80, drawAs: 'limb', width: 45, z: 23, endCap: true, layer: 'front' },
-    { id: 'armUpperR', parent: 'root', x: 90, y: -139, angle: 44.5, len: 80, drawAs: 'limb', width: 52, z: 6, endCap: false },
-    { id: 'armLowerR', parent: 'armUpperR', x: 6, y: 0, angle: 42.1, len: 80, drawAs: 'limb', width: 45, z: 23, layer: 'front' },
-    { id: 'legUpperL', parent: 'root', x: -41, y: 5, angle: 100.1, len: 92, drawAs: 'limb', width: 50, z: 2, endCap: false },
-    { id: 'legLowerL', parent: 'legUpperL', x: 0, y: -1, angle: -7.5, len: 20, drawAs: 'limb', width: 50, z: 2, endCap: false },
-    { id: 'legUpperR', parent: 'root', x: 38, y: 2, angle: 75.2, len: 92, drawAs: 'limb', width: 50, z: 2, endCap: false },
-    { id: 'legLowerR', parent: 'legUpperR', x: 1, y: 1, angle: 10.6, len: 22, drawAs: 'limb', width: 51, z: 2, endCap: false },
-    { id: 'boneox6op', parent: 'root', x: 2, y: -181, angle: 89.1, len: 164, drawAs: null, width: 28, z: 8, label: 'Torso', icon: '🩻' },
+    { id: 'root', parent: null, x: 4, y: 276, angle: 0, len: 0, z: 0, merge: true, drawAs: 'limb', width: 28, layer: 'back', icon: '💪', mergeGroup: 'body' },
+    { id: 'head', parent: 'root', x: 2, y: -215, angle: 0, len: 0, z: 20, merge: false, drawAs: null, width: 22, mergeGroup: 'head' },
+    { id: 'armUpperL', parent: 'root', x: -83, y: -143, angle: 140.5, len: 80, drawAs: 'limb', width: 52, z: 6, endCap: false, merge: true, layer: null, mergeGroup: 'armL' },
+    { id: 'armLowerL', parent: 'armUpperL', x: 3, y: -2, angle: -53.2, len: 80, drawAs: 'limb', width: 45, z: 23, endCap: true, layer: 'front', mergeGroup: 'armL' },
+    { id: 'armUpperR', parent: 'root', x: 90, y: -139, angle: 44.5, len: 80, drawAs: 'limb', width: 52, z: 6, endCap: false, mergeGroup: 'armR' },
+    { id: 'armLowerR', parent: 'armUpperR', x: 6, y: 0, angle: 42.1, len: 80, drawAs: 'limb', width: 45, z: 23, layer: 'front', mergeGroup: 'armR' },
+    { id: 'legUpperL', parent: 'root', x: -41, y: 5, angle: 100.1, len: 92, drawAs: 'limb', width: 50, z: 2, endCap: false, mergeGroup: 'legL' },
+    { id: 'legLowerL', parent: 'legUpperL', x: 0, y: -1, angle: -7.5, len: 20, drawAs: 'limb', width: 50, z: 2, endCap: false, mergeGroup: 'legL' },
+    { id: 'legUpperR', parent: 'root', x: 38, y: 2, angle: 75.2, len: 92, drawAs: 'limb', width: 50, z: 2, endCap: false, mergeGroup: 'legR' },
+    { id: 'legLowerR', parent: 'legUpperR', x: 1, y: 1, angle: 10.6, len: 22, drawAs: 'limb', width: 51, z: 2, endCap: false, mergeGroup: 'legR' },
+    { id: 'boneox6op', parent: 'root', x: 2, y: -181, angle: 89.1, len: 164, drawAs: null, width: 28, z: 8, label: 'Torso', icon: '🩻', mergeGroup: 'body' },
   ],
   shapes: [
     { id: 'torso', bone: 'boneox6op', kind: 'poly', z: 5, fill: 'skin', pts: [[21,90],[170,72],[165,-67],[25,-90],[2,-53],[-35,-29],[-40,30],[-6,50]] },
@@ -71,6 +72,23 @@ export const DEFAULT_PUPPET: PuppetModel = {
     'scratch head': { dur: 1.5, loop: true, keys: [
       { t: 0, pose: { angles: { armLowerL: 97.1, armUpperL: -111.7, boneox6op: 89.6, head: 6, armUpperR: 78.3, armLowerR: 11.3 }, root: {} } },
       { t: 0.75, pose: { angles: { armLowerL: 85.2, armUpperL: -100, boneox6op: 88.8, head: 7.4, armUpperR: 80.3, armLowerR: 5.9 }, root: { x: 0, y: 0, r: 0 } } },
+    ] },
+    talk: { dur: 2, loop: true, icon: '🗣️', keys: [
+      { t: 0,    pose: { angles: { head: 0, armUpperL: 121, armUpperR: 108, armLowerL: -52, armLowerR: -242, boneox6op: 89.5 }, root: { x: 0, y: 0, r: 0 } } },
+      { t: 0.5,  pose: { angles: { head: 6, armUpperL: 124, armUpperR: 105, armLowerL: -55, armLowerR: -248 } } },
+      { t: 1.0,  pose: { angles: { head: -2, armUpperL: 119, armUpperR: 111, armLowerL: -50, armLowerR: -238 } } },
+      { t: 1.5,  pose: { angles: { head: 5, armUpperL: 122, armUpperR: 106, armLowerL: -54, armLowerR: -245 } } },
+      { t: 2,    pose: { angles: { head: 0, armUpperL: 121, armUpperR: 108, armLowerL: -52, armLowerR: -242, boneox6op: 89.5 }, root: { x: 0, y: 0, r: 0 } } },
+    ] },
+    hunt: { dur: 2, loop: true, icon: '🏹', keys: [
+      { t: 0,   pose: { angles: { head: -12, armUpperL: 68, armUpperR: 32, armLowerL: 15, armLowerR: -5, legUpperL: 97.7, legLowerL: -3.6, legUpperR: 72.2, legLowerR: 5.2, boneox6op: 76 }, root: { x: 0, y: 0, r: -18 } } },
+      { t: 1,   pose: { angles: { head: -15, armUpperL: 65, armUpperR: 29, armLowerL: 18, armLowerR: -8, boneox6op: 74 }, root: { x: 0, y: -3, r: -18 } } },
+      { t: 2,   pose: { angles: { head: -12, armUpperL: 68, armUpperR: 32, armLowerL: 15, armLowerR: -5, legUpperL: 97.7, legLowerL: -3.6, legUpperR: 72.2, legLowerR: 5.2, boneox6op: 76 }, root: { x: 0, y: 0, r: -18 } } },
+    ] },
+    dig: { dur: 1, loop: true, icon: '⛏️', keys: [
+      { t: 0,    pose: { angles: { armUpperL: 22, armLowerL: 38, armUpperR: 18, armLowerR: 42, head: -8, legUpperL: 100, legLowerL: 5, legUpperR: 74, legLowerR: 8, boneox6op: 68 }, root: { x: 0, y: 0, r: -28 } } },
+      { t: 0.45, pose: { angles: { armUpperL: -18, armLowerL: -25, armUpperR: -14, armLowerR: -22, head: -12, boneox6op: 65 }, root: { x: 0, y: -6, r: -32 } } },
+      { t: 1,    pose: { angles: { armUpperL: 22, armLowerL: 38, armUpperR: 18, armLowerR: 42, head: -8, legUpperL: 100, legLowerL: 5, legUpperR: 74, legLowerR: 8, boneox6op: 68 }, root: { x: 0, y: 0, r: -28 } } },
     ] },
   },
 };

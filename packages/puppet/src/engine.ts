@@ -43,8 +43,8 @@ export function blend(p0: Pose, p1: Pose, u: number): Pose {
   const keys = new Set([...Object.keys(a0), ...Object.keys(a1)]);
   keys.forEach((k) => {
     const v0 = a0[k], v1 = a1[k];
-    if (v0 == null) out[k] = v1;
-    else if (v1 == null) out[k] = v0;
+    if (v0 == null) out[k] = v1 ?? 0;
+    else if (v1 == null) out[k] = v0 ?? 0;
     else out[k] = lerp(v0, v1, u);
   });
   const r0 = p0?.root ?? {}, r1 = p1?.root ?? {};
@@ -103,7 +103,26 @@ export function shapeMerges(s: Shape, colors: PuppetColors): boolean {
   if (s.merge != null) return !!s.merge;
   if (s.stroke === false) return false;
   const isSkin = s.fill === 'skin' || colors[s.fill] === colors.skin;
-  return isSkin;
+  if (!isSkin) return false;
+  const id = (s.id || '').toLowerCase();
+  return !/nose|eye|brow|mouth|pupil|tooth|lip/.test(id);
+}
+
+export function groupOf(byId: Record<string, Bone>, node: Bone | Shape | string): string | null {
+  const cur: Bone | Shape | undefined = typeof node === 'string' ? byId[node] : node;
+  if (!cur) return null;
+  if (cur.mergeGroup) return cur.mergeGroup;
+  if ('bone' in cur && !('parent' in cur)) {
+    const bone = byId[(cur as Shape).bone];
+    if (bone?.mergeGroup) return bone.mergeGroup;
+  }
+  return null;
+}
+
+export function groupOfIn(bones: Bone[], node: Bone | Shape | string): string | null {
+  const byId: Record<string, Bone> = {};
+  bones.forEach((b) => { byId[b.id] = b; });
+  return groupOf(byId, node);
 }
 
 export function resolveLayer(byId: Record<string, Bone>, node: Bone | Shape | string): string {

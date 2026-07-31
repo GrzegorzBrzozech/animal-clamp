@@ -7,6 +7,8 @@ import {
   shapeMerges,
   resolveLayer,
   polyPath,
+  groupOf,
+  groupOfIn,
 } from './engine';
 import type { Bone, Shape, PuppetAction, PuppetColors } from './types';
 
@@ -203,6 +205,86 @@ describe('shapeMerges', () => {
     const colors: PuppetColors = { ink: '#000', skin: '#fff', light: '#fff' };
     const s = shape({ id: 's', bone: 'b', fill: 'light' });
     expect(shapeMerges(s, colors)).toBe(true);
+  });
+
+  it('skin-fill shape named "nose" (no explicit merge) → false (face exclusion)', () => {
+    const s = shape({ id: 'nose', bone: 'head', fill: 'skin' });
+    expect(shapeMerges(s, COLORS)).toBe(false);
+  });
+
+  it('skin-fill shape named "eyeL" → false (face exclusion)', () => {
+    const s = shape({ id: 'eyeL', bone: 'head', fill: 'skin' });
+    expect(shapeMerges(s, COLORS)).toBe(false);
+  });
+
+  it('skin-fill shape named "browL" → false (face exclusion)', () => {
+    const s = shape({ id: 'browL', bone: 'head', fill: 'skin' });
+    expect(shapeMerges(s, COLORS)).toBe(false);
+  });
+
+  it('skin-fill shape named "mouth" → false (face exclusion)', () => {
+    const s = shape({ id: 'mouth', bone: 'head', fill: 'skin' });
+    expect(shapeMerges(s, COLORS)).toBe(false);
+  });
+
+  it('skin-fill face shape with explicit merge:true → true (explicit wins)', () => {
+    const s = shape({ id: 'nose', bone: 'head', fill: 'skin', merge: true });
+    expect(shapeMerges(s, COLORS)).toBe(true);
+  });
+
+  it('skin-fill shape named "earR" (not a face detail) → true', () => {
+    const s = shape({ id: 'earR', bone: 'head', fill: 'skin' });
+    expect(shapeMerges(s, COLORS)).toBe(true);
+  });
+});
+
+// ─── groupOf ──────────────────────────────────────────────────────────────────
+
+describe('groupOf', () => {
+  const bones = [
+    bone({ id: 'root', mergeGroup: 'body' }),
+    bone({ id: 'armUpperL', parent: 'root', mergeGroup: 'armL' }),
+    bone({ id: 'armLowerL', parent: 'armUpperL' }),
+  ];
+  const byId = Object.fromEntries(bones.map((b) => [b.id, b]));
+
+  it('bone with mergeGroup → that group', () => {
+    expect(groupOf(byId, byId.armUpperL)).toBe('armL');
+  });
+
+  it('bone without mergeGroup → null', () => {
+    expect(groupOf(byId, byId.armLowerL)).toBeNull();
+  });
+
+  it('shape with own mergeGroup → that group', () => {
+    const s = shape({ id: 's', bone: 'armLowerL', fill: 'skin', mergeGroup: 'armL' });
+    expect(groupOf(byId, s)).toBe('armL');
+  });
+
+  it('shape without mergeGroup inherits bone mergeGroup', () => {
+    const s = shape({ id: 's', bone: 'armUpperL', fill: 'skin' });
+    expect(groupOf(byId, s)).toBe('armL');
+  });
+
+  it('shape without mergeGroup on ungrouped bone → null', () => {
+    const s = shape({ id: 's', bone: 'armLowerL', fill: 'skin' });
+    expect(groupOf(byId, s)).toBeNull();
+  });
+
+  it('unknown string id → null', () => {
+    expect(groupOf(byId, 'nonexistent')).toBeNull();
+  });
+});
+
+describe('groupOfIn', () => {
+  const bones = [bone({ id: 'root', mergeGroup: 'body' })];
+
+  it('returns bone mergeGroup via bones array', () => {
+    expect(groupOfIn(bones, bones[0])).toBe('body');
+  });
+
+  it('returns null for unlabeled bone', () => {
+    expect(groupOfIn(bones, bone({ id: 'other' }))).toBeNull();
   });
 });
 

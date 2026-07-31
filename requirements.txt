@@ -2,3 +2,4 @@
 -e ../tools/text-to-speech
 -e ../tools/static-charts
 -e ../tools/translate
+-e ../tools/gdocs

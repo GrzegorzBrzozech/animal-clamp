@@ -37,6 +37,20 @@ rigger (design + export model.js)
 Any component or logic used by both apps goes in `packages/puppet`.
 Import as `@animal-clamp/puppet` — resolved via workspace link (no build step needed).
 
+## Google Docs
+
+Call the shared `gdocs` tool directly — it manages its own venv:
+
+```bash
+/Users/gtrofymov/git/clampers/tools/gdocs/run read "<doc-url>"
+/Users/gtrofymov/git/clampers/tools/gdocs/run write "<doc-url>" <file>
+/Users/gtrofymov/git/clampers/tools/gdocs/run list "<folder-url>"
+/Users/gtrofymov/git/clampers/tools/gdocs/run create "<title>" [folder-id] [--file <file>]
+```
+
+On the first call, `run` bootstraps a venv inside `tools/gdocs/` automatically.
+Credentials: `tools/gdocs/config/google-service-account.json` (never committed).
+
 ## App-specific docs
 
 - Remotion video rules → `apps/remotion/CLAUDE.md`

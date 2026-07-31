@@ -10,6 +10,7 @@ export interface Bone {
   width?: number;
   endCap?: boolean;
   merge?: boolean;
+  mergeGroup?: string;
   layer?: string | null;
   label?: string;
   icon?: string;
@@ -31,6 +32,7 @@ export interface Shape {
   closed?: boolean;
   hidden?: boolean;
   merge?: boolean;
+  mergeGroup?: string;
   layer?: string | null;
   label?: string;
   icon?: string;
@@ -38,7 +40,7 @@ export interface Shape {
 }
 
 export interface Pose {
-  angles: Record<string, number>;
+  angles: Record<string, number | undefined>;
   root?: { x?: number; y?: number; r?: number };
   visible?: Record<string, boolean>;
 }
@@ -52,6 +54,7 @@ export interface PuppetAction {
   dur: number;
   loop: boolean;
   keys: ActionKey[];
+  icon?: string;
 }
 
 export interface PuppetColors {
@@ -68,6 +71,7 @@ export interface PuppetModel {
   shapes: Shape[];
   actions: Record<string, PuppetAction>;
   merge?: boolean;
+  mergeGroupColors?: Record<string, string>;
 }
 
 export interface WorldNode {

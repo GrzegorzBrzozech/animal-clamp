@@ -1,5 +1,5 @@
 import React from 'react';
-import { computeWorld, samplePose, polyPath, boneMerges, shapeMerges, resolveLayer } from './engine';
+import { computeWorld, samplePose, polyPath, boneMerges, shapeMerges, groupOf } from './engine';
 import type { PuppetModel, Pose, Shape, PuppetColors } from './types';
 
 interface ShapeElProps {
@@ -62,21 +62,27 @@ export function Puppet({ model, action, time = 0, pose: poseProp, wobble = true,
   const byId = Object.fromEntries(bones.map((b) => [b.id, b]));
 
   const items: { z: number; key: string; el: React.ReactNode }[] = [];
-  const backEls: React.ReactNode[] = [];
-  const frontEls: React.ReactNode[] = [];
-  let minBackZ = Infinity, minFrontZ = Infinity;
+  const groupEls: Record<string, React.ReactNode[]> = {};
+  const groupMinZ: Record<string, number> = {};
 
-  const pushMerge = (z: number, el: React.ReactNode, layer: string) => {
-    if (layer === 'front') { frontEls.push(el); if (z < minFrontZ) minFrontZ = z; }
-    else { backEls.push(el); if (z < minBackZ) minBackZ = z; }
+  const resolveGroup = (node: { mergeGroup?: string; layer?: string | null }): string => {
+    if (node.mergeGroup) return node.mergeGroup;
+    return node.layer === 'front' ? '__front__' : '__back__';
+  };
+
+  const pushMerge = (z: number, el: React.ReactNode, grp: string) => {
+    (groupEls[grp] = groupEls[grp] ?? []).push(el);
+    if (groupMinZ[grp] == null || z < groupMinZ[grp]) groupMinZ[grp] = z;
   };
 
   bones.forEach((b) => {
     const wn = W[b.id];
     if (!wn) return;
     const deg = (wn.A * 180) / Math.PI;
-    const bMerge = merged && boneMerges(b);
-    const bLayer = resolveLayer(byId, b);
+
+    const bWantsMerge = merged && boneMerges(b);
+    const bGroup = bWantsMerge ? (groupOf(byId, b) ?? resolveGroup(b)) : null;
+    const bMerge = bGroup !== null;
 
     if (b.drawAs === 'limb' && b.len) {
       if (bMerge) {
@@ -84,7 +90,7 @@ export function Puppet({ model, action, time = 0, pose: poseProp, wobble = true,
           <g key={`bone-${b.id}`} transform={`translate(${wn.ox} ${wn.oy}) rotate(${deg})`}>
             <line x1="0" y1="0" x2={b.len} y2="0" stroke={colors.skin} strokeWidth={b.width ?? 30} strokeLinecap="round" />
           </g>
-        ), bLayer);
+        ), bGroup!);
         const rr = (b.width ?? 30) / 2, off = rr + 2.25, x0 = rr * 0.25, x1 = b.len - rr * 0.15;
         if (x1 > x0) items.push({ z: (b.z ?? 0) + 0.05, key: `edge-${b.id}`, el: (
           <g key={`edge-${b.id}`} transform={`translate(${wn.ox} ${wn.oy}) rotate(${deg})`}>
@@ -109,7 +115,7 @@ export function Puppet({ model, action, time = 0, pose: poseProp, wobble = true,
         if (bMerge) {
           pushMerge((b.z ?? 0) + 0.1, (
             <circle key={`cap-${b.id}`} cx={wn.tipX} cy={wn.tipY} r={(b.width ?? 30) * 0.45 + 2} fill={colors.skin} />
-          ), bLayer);
+          ), bGroup!);
         } else {
           items.push({
             z: (b.z ?? 0) + 0.1,
@@ -138,12 +144,14 @@ export function Puppet({ model, action, time = 0, pose: poseProp, wobble = true,
           : !s.hidden);
       if (!isVisible) return;
       const z = s.z ?? (b.z ?? 0);
-      if (merged && shapeMerges(s, colors)) {
+      const sWantsMerge = merged && shapeMerges(s, colors);
+      const sGroup = sWantsMerge ? (groupOf(byId, s) ?? resolveGroup({ mergeGroup: s.mergeGroup, layer: s.layer ?? b.layer })) : null;
+      if (sGroup !== null) {
         pushMerge(z, (
           <g key={`s-${s.id}`} transform={`translate(${wn.ox} ${wn.oy}) rotate(${deg})`}>
             <ShapeEl shape={{ ...s, stroke: false }} colors={colors} />
           </g>
-        ), (s.layer || bLayer) as string);
+        ), sGroup);
       } else {
         items.push({
           z,
@@ -160,28 +168,30 @@ export function Puppet({ model, action, time = 0, pose: poseProp, wobble = true,
 
   shapes.filter((s) => !byId[s.bone]).forEach((s) => {
     const z = s.z ?? 0;
-    if (merged && shapeMerges(s, colors)) {
-      pushMerge(z, <g key={`s-${s.id}`}><ShapeEl shape={{ ...s, stroke: false }} colors={colors} /></g>, (s.layer || 'back') as string);
+    const sWantsMerge = merged && shapeMerges(s, colors);
+    const sGroup = sWantsMerge ? (s.mergeGroup ?? '__back__') : null;
+    if (sGroup !== null) {
+      pushMerge(z, <g key={`s-${s.id}`}><ShapeEl shape={{ ...s, stroke: false }} colors={colors} /></g>, sGroup);
     } else {
       items.push({ z, key: `s-${s.id}`, el: <g key={`s-${s.id}`}><ShapeEl shape={s} colors={colors} /></g> });
     }
   });
 
-  // Merged groups sort at their minimum z. Non-merged items must have z values
-  // outside the merged z range to interleave correctly (e.g. face overlays above max merged z).
-  if (backEls.length) items.push({ z: isFinite(minBackZ) ? minBackZ : 0, key: 'merged-back', el: (<g key="merged-back" filter="url(#pupMerge)">{backEls}</g>) });
-  if (frontEls.length) items.push({ z: isFinite(minFrontZ) ? minFrontZ : 0, key: 'merged-front', el: (<g key="merged-front" filter="url(#pupMerge)">{frontEls}</g>) });
+  Object.keys(groupEls).forEach((g) => {
+    const z = groupMinZ[g] ?? 0;
+    items.push({ z, key: `merged-${g}`, el: (<g key={`merged-${g}`} filter="url(#pupMerge)">{groupEls[g]}</g>) });
+  });
   items.sort((a, b) => a.z - b.z);
 
   const vb = model.viewBox ?? '-200 -40 400 560';
   return (
     <svg viewBox={vb} style={{ display: 'block', width: '100%', height: '100%', overflow: 'visible', ...style }}>
       <defs>
-        <filter id="pupWob" x="-15%" y="-15%" width="130%" height="130%">
+        <filter id="pupWob" filterUnits="userSpaceOnUse" x="-2000" y="-2000" width="4000" height="4000">
           <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="4" result="n" />
           <feDisplacementMap in="SourceGraphic" in2="n" scale={wobble ? 2.6 : 0} />
         </filter>
-        <filter id="pupMerge" x="-30%" y="-30%" width="160%" height="160%">
+        <filter id="pupMerge" filterUnits="userSpaceOnUse" x="-2000" y="-2000" width="4000" height="4000">
           <feMorphology in="SourceAlpha" operator="dilate" radius="4.5" result="dil" />
           <feFlood floodColor={colors.ink || '#3b3a37'} result="inkfill" />
           <feComposite in="inkfill" in2="dil" operator="in" result="edge" />

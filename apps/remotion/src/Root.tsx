@@ -29,6 +29,9 @@ import { politiciansLongevitySchema, DEFAULT_STARTS as POLITICIANS_LONGEVITY_STA
 import { TeachersSalary } from "~/compositions/0139-power-dependency/teachers-salary";
 import { teachersSalaryConfig } from "~/compositions/0139-power-dependency/teachers-salary/config";
 import { teachersSalarySchema, DEFAULT_STARTS as TEACHERS_SALARY_STARTS } from "~/compositions/0139-power-dependency/teachers-salary/plan";
+import { HeatDeathsUsEu } from "~/compositions/0151-conditioners/heat-deaths-us-eu";
+import { heatDeathsUsEuConfig } from "~/compositions/0151-conditioners/heat-deaths-us-eu/config";
+import { heatDeathsUsEuSchema, DEFAULT_STARTS as HEAT_DEATHS_STARTS } from "~/compositions/0151-conditioners/heat-deaths-us-eu/plan";
 import { HabsburgInbreeding } from "~/compositions/0148-carnivore-state/habsburg-inbreeding";
 import { habsburgInbreedingConfig } from "~/compositions/0148-carnivore-state/habsburg-inbreeding/config";
 import { habsburgInbreedingSchema, DEFAULT_STARTS as HABSBURG_STARTS } from "~/compositions/0148-carnivore-state/habsburg-inbreeding/plan";
@@ -162,6 +165,19 @@ export const RemotionRoot: React.FC = () => {
           fps={teachersSalaryConfig.fps}
           width={teachersSalaryConfig.width}
           height={teachersSalaryConfig.height}
+        />
+      </Folder>
+
+      <Folder name="0151-conditioners">
+        <Composition
+          id={heatDeathsUsEuConfig.id}
+          component={HeatDeathsUsEu}
+          schema={heatDeathsUsEuSchema}
+          defaultProps={HEAT_DEATHS_STARTS}
+          durationInFrames={heatDeathsUsEuConfig.durationInFrames}
+          fps={heatDeathsUsEuConfig.fps}
+          width={heatDeathsUsEuConfig.width}
+          height={heatDeathsUsEuConfig.height}
         />
       </Folder>
 
