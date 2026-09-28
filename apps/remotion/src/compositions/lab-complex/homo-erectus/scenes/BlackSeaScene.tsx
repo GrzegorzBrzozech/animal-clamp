@@ -108,11 +108,29 @@ export const BlackSeaScene: React.FC = () => {
   const gullY = GROUND_Y - 200 + Math.sin(((frame - gS) / 55) * Math.PI) * 30;
 
   // ── Caveman ───────────────────────────────────────────────────────────────
+  // actionStartFrame/prevAction let PuppetActor reset each action's own clock
+  // at the switch and cross-fade out of the previous pose, instead of jumping
+  // straight into a random phase of the new loop (the cause of the ugly pop).
   const caveAction: string = frame < FRAME_DIG_END
     ? "dig"
     : frame < FRAME_AUDIO_END
     ? "scratch head"
     : "wave";
+  const caveActionStartFrame = frame < FRAME_DIG_END
+    ? 0
+    : frame < FRAME_AUDIO_END
+    ? FRAME_DIG_END
+    : FRAME_AUDIO_END;
+  const cavePrevAction = frame < FRAME_DIG_END
+    ? undefined
+    : frame < FRAME_AUDIO_END
+    ? "dig"
+    : "scratch head";
+  const cavePrevActionStartFrame = frame < FRAME_DIG_END
+    ? undefined
+    : frame < FRAME_AUDIO_END
+    ? 0
+    : FRAME_DIG_END;
 
   // Puppet: viewBox -200 -40 400 560; feet at viewBox-y ≈ 388 out of 560 total
   const puppetH = 672;
@@ -247,6 +265,9 @@ export const BlackSeaScene: React.FC = () => {
       <PuppetActor
         model={cavemanModel}
         action={caveAction}
+        actionStartFrame={caveActionStartFrame}
+        prevAction={cavePrevAction}
+        prevActionStartFrame={cavePrevActionStartFrame}
         wobble={false}
         style={{
           position: "absolute",

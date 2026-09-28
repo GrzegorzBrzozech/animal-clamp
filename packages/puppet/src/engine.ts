@@ -4,6 +4,10 @@ export const RAD = Math.PI / 180;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const ss = (u: number) => { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); };
 const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
+const lerpAngle = (a: number, b: number, u: number) => {
+  const delta = b - a - Math.round((b - a) / 360) * 360;
+  return a + delta * u;
+};
 
 export function computeWorld(bones: Bone[], pose: Pose): WorldMap {
   const byId: Record<string, Bone> = {};
@@ -45,7 +49,7 @@ export function blend(p0: Pose, p1: Pose, u: number): Pose {
     const v0 = a0[k], v1 = a1[k];
     if (v0 == null) out[k] = v1 ?? 0;
     else if (v1 == null) out[k] = v0 ?? 0;
-    else out[k] = lerp(v0, v1, u);
+    else out[k] = lerpAngle(v0, v1, u);
   });
   const r0 = p0?.root ?? {}, r1 = p1?.root ?? {};
   return {
@@ -53,7 +57,7 @@ export function blend(p0: Pose, p1: Pose, u: number): Pose {
     root: {
       x: lerp(r0.x ?? 0, r1.x ?? 0, u),
       y: lerp(r0.y ?? 0, r1.y ?? 0, u),
-      r: lerp(r0.r ?? 0, r1.r ?? 0, u),
+      r: lerpAngle(r0.r ?? 0, r1.r ?? 0, u),
     },
   };
 }
