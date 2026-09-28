@@ -1,9 +1,6 @@
-// puppet-model.js — exported from Puppet Studio 2026-07-28
-import type { PuppetModel } from '@animal-clamp/puppet';
+// puppet-model.js — exported from Puppet Studio 2026-09-28
 export const model = {
-  "name": "Pithecanthropus-1.0",
   "viewBox": "-200 -40 400 560",
-  "merge": false,
   "colors": {
     "ink": "#3b3a37",
     "skin": "#e9e2d2",
@@ -166,7 +163,6 @@ export const model = {
       "kind": "poly",
       "z": 6,
       "fill": "fur",
-      "merge": false,
       "pts": [
         [
           7,
@@ -215,7 +211,7 @@ export const model = {
       ]
     },
     {
-      "id": "footL",
+      "id": "shapena72s",
       "bone": "legLowerL",
       "kind": "poly",
       "z": 10,
@@ -240,7 +236,7 @@ export const model = {
       ]
     },
     {
-      "id": "footR",
+      "id": "shapeovocp",
       "bone": "legLowerR",
       "kind": "poly",
       "z": 10,
@@ -270,7 +266,6 @@ export const model = {
       "kind": "poly",
       "z": 20,
       "fill": "skin",
-      "merge": false,
       "pts": [
         [
           33,
@@ -410,7 +405,6 @@ export const model = {
       "z": 22,
       "fill": "ink",
       "stroke": false,
-      "merge": false,
       "pts": [
         [
           -40,
@@ -484,7 +478,6 @@ export const model = {
       "kind": "poly",
       "z": 22,
       "fill": "skin",
-      "merge": false,
       "pts": [
         [
           -8,
@@ -531,61 +524,61 @@ export const model = {
       ]
     },
     {
-      "id": "handThumbL",
+      "id": "shapehpyuy",
       "bone": "armLowerL",
-      "kind": "circle",
       "z": 10,
       "fill": "skin",
+      "kind": "circle",
       "cx": 81,
       "cy": -23,
       "r": 8
     },
     {
-      "id": "handThumbR",
+      "id": "shape5a485",
       "bone": "armLowerR",
-      "kind": "circle",
       "z": 10,
       "fill": "skin",
+      "kind": "circle",
       "cx": 82,
       "cy": 21,
       "r": 8
     },
     {
-      "id": "handIdx R",
+      "id": "shape9k3hj",
       "bone": "armLowerR",
-      "kind": "circle",
       "z": 10,
       "fill": "skin",
+      "kind": "circle",
       "cx": 101,
       "cy": 10,
       "r": 8
     },
     {
-      "id": "handMidR",
+      "id": "shapepy1qf",
       "bone": "armLowerR",
-      "kind": "circle",
       "z": 10,
       "fill": "skin",
+      "kind": "circle",
       "cx": 103,
       "cy": -8,
       "r": 8
     },
     {
-      "id": "handIdxL",
+      "id": "shapeugpyx",
       "bone": "armLowerL",
-      "kind": "circle",
       "z": 10,
       "fill": "skin",
+      "kind": "circle",
       "cx": 98,
       "cy": -9,
       "r": 8
     },
     {
-      "id": "handMidL",
+      "id": "shape7vczj",
       "bone": "armLowerL",
-      "kind": "circle",
       "z": 10,
       "fill": "skin",
+      "kind": "circle",
       "cx": 94,
       "cy": 15,
       "r": 8
@@ -608,7 +601,7 @@ export const model = {
             },
             "root": {
               "x": 0,
-              "y": -1.477,
+              "y": -1.4770045466545252,
               "r": 0
             }
           }
@@ -625,7 +618,7 @@ export const model = {
             },
             "root": {
               "x": 0,
-              "y": 0,
+              "y": -1.6810236953044765e-31,
               "r": 0
             }
           }
@@ -765,5 +758,5 @@ export const model = {
       ]
     }
   }
-} satisfies PuppetModel;
+};
 export default model;

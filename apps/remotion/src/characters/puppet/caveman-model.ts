@@ -1,15 +1,14 @@
-// puppet-model.js — exported from Puppet Studio 2026-07-28
-import type { PuppetModel } from '@animal-clamp/puppet';
+// puppet-model.js — exported from Puppet Studio 2026-09-28
 export const model = {
-  "name": "Caveman-1.0",
-  "viewBox": "-200 -40 400 560",
+  "viewBox": "-220 -80 700 640",
   "colors": {
     "ink": "#3b3a37",
     "skin": "#e9e2d2",
     "hair": "#38372e",
-    "fur": "#8f8676"
+    "Fur": "#8f8676",
+    "wood": "#8a5a34",
+    "stone": "#6b6b6b"
   },
-  "merge": true,
   "bones": [
     {
       "id": "root",
@@ -19,11 +18,12 @@ export const model = {
       "angle": 0,
       "len": 0,
       "z": 0,
-      "merge": true,
+      "merge": false,
       "drawAs": "limb",
       "width": 28,
       "layer": "back",
-      "icon": "💪"
+      "icon": "🫜",
+      "mergeGroup": null
     },
     {
       "id": "head",
@@ -33,9 +33,10 @@ export const model = {
       "angle": 0,
       "len": 0,
       "z": 20,
-      "merge": false,
-      "drawAs": null,
-      "width": 22
+      "merge": true,
+      "drawAs": "limb",
+      "width": 22,
+      "mergeGroup": "head"
     },
     {
       "id": "armUpperL",
@@ -44,25 +45,26 @@ export const model = {
       "y": -143,
       "angle": 140.5,
       "len": 80,
-      "z": 6,
       "drawAs": "limb",
       "width": 52,
+      "z": 6,
       "endCap": false,
       "merge": true,
-      "layer": null
+      "layer": null,
+      "mergeGroup": "body"
     },
     {
       "id": "armLowerL",
       "parent": "armUpperL",
-      "x": 3,
+      "x": 2,
       "y": -2,
-      "angle": -53.2,
-      "len": 80,
-      "z": 23,
+      "angle": -51.7,
+      "len": 78,
       "drawAs": "limb",
       "width": 45,
+      "z": 11,
       "endCap": true,
-      "layer": "front"
+      "mergeGroup": "armL"
     },
     {
       "id": "armUpperR",
@@ -71,10 +73,11 @@ export const model = {
       "y": -139,
       "angle": 44.5,
       "len": 80,
-      "z": 6,
       "drawAs": "limb",
       "width": 52,
-      "endCap": false
+      "z": 6,
+      "endCap": false,
+      "mergeGroup": "body"
     },
     {
       "id": "armLowerR",
@@ -82,11 +85,13 @@ export const model = {
       "x": 6,
       "y": 0,
       "angle": 42.1,
-      "len": 80,
-      "z": 23,
+      "len": 77,
       "drawAs": "limb",
       "width": 45,
-      "layer": "front"
+      "z": 9,
+      "endCap": true,
+      "mergeGroup": "armR",
+      "merge": true
     },
     {
       "id": "legUpperL",
@@ -95,10 +100,11 @@ export const model = {
       "y": 5,
       "angle": 100.1,
       "len": 92,
-      "z": 2,
       "drawAs": "limb",
       "width": 50,
-      "endCap": false
+      "z": 2,
+      "endCap": false,
+      "mergeGroup": "body"
     },
     {
       "id": "legLowerL",
@@ -107,10 +113,11 @@ export const model = {
       "y": -1,
       "angle": -7.5,
       "len": 20,
-      "z": 2,
       "drawAs": "limb",
       "width": 50,
-      "endCap": false
+      "z": 2,
+      "endCap": false,
+      "mergeGroup": "body"
     },
     {
       "id": "legUpperR",
@@ -119,10 +126,11 @@ export const model = {
       "y": 2,
       "angle": 75.2,
       "len": 92,
-      "z": 2,
       "drawAs": "limb",
       "width": 50,
-      "endCap": false
+      "z": 2,
+      "endCap": false,
+      "mergeGroup": "body"
     },
     {
       "id": "legLowerR",
@@ -131,10 +139,11 @@ export const model = {
       "y": 1,
       "angle": 10.6,
       "len": 22,
-      "z": 2,
       "drawAs": "limb",
       "width": 51,
-      "endCap": false
+      "z": 2,
+      "endCap": false,
+      "mergeGroup": "body"
     },
     {
       "id": "boneox6op",
@@ -143,11 +152,40 @@ export const model = {
       "y": -181,
       "angle": 89.1,
       "len": 164,
-      "z": 8,
       "drawAs": null,
       "width": 28,
+      "z": 8,
       "label": "Torso",
-      "icon": "🩻"
+      "icon": "🩻",
+      "mergeGroup": "body"
+    },
+    {
+      "id": "bone35bhe",
+      "parent": "armLowerL",
+      "x": 1,
+      "y": 0,
+      "angle": -87.7,
+      "len": 374,
+      "drawAs": null,
+      "width": 28,
+      "z": 8,
+      "label": "Спис.",
+      "icon": "🦯"
+    },
+    {
+      "id": "bonecxzjy",
+      "parent": "armLowerL",
+      "x": -30,
+      "y": 27,
+      "angle": -33,
+      "len": 180,
+      "drawAs": null,
+      "width": 24,
+      "z": 10,
+      "endCap": false,
+      "label": "stick",
+      "icon": "🪾",
+      "mergeGroup": "stick"
     }
   ],
   "shapes": [
@@ -175,38 +213,38 @@ export const model = {
           -90
         ],
         [
-          2,
-          -53
+          -5,
+          -58
         ],
         [
-          -35,
-          -29
+          -50,
+          -40
         ],
         [
-          -40,
-          30
+          -53,
+          35
         ],
         [
           -6,
-          50
+          55
         ]
-      ]
+      ],
+      "mergeGroup": "body"
     },
     {
       "id": "cloth",
       "bone": "root",
       "kind": "poly",
       "z": 6,
-      "fill": "fur",
-      "merge": false,
+      "fill": "Fur",
       "pts": [
         [
           11,
           -72
         ],
         [
-          57,
-          -182
+          61,
+          -192
         ],
         [
           76,
@@ -248,7 +286,9 @@ export const model = {
           -15,
           -33
         ]
-      ]
+      ],
+      "hidden": false,
+      "merge": false
     },
     {
       "id": "shapena72s",
@@ -256,8 +296,6 @@ export const model = {
       "kind": "poly",
       "z": 10,
       "fill": "skin",
-      "label": "FootL",
-      "icon": "👟",
       "pts": [
         [
           36,
@@ -299,7 +337,9 @@ export const model = {
           41,
           -13
         ]
-      ]
+      ],
+      "label": "FootL",
+      "icon": "👟"
     },
     {
       "id": "shapeovocp",
@@ -307,8 +347,6 @@ export const model = {
       "kind": "poly",
       "z": 10,
       "fill": "skin",
-      "label": "FootR",
-      "icon": "👟",
       "pts": [
         [
           68,
@@ -354,7 +392,9 @@ export const model = {
           58,
           1
         ]
-      ]
+      ],
+      "label": "FootR",
+      "icon": "👟"
     },
     {
       "id": "headbox",
@@ -362,7 +402,6 @@ export const model = {
       "kind": "poly",
       "z": 20,
       "fill": "skin",
-      "merge": false,
       "pts": [
         [
           33,
@@ -388,7 +427,10 @@ export const model = {
           -28,
           -38
         ]
-      ]
+      ],
+      "merge": true,
+      "hidden": false,
+      "mergeGroup": "head"
     },
     {
       "id": "hair",
@@ -485,7 +527,8 @@ export const model = {
           -23,
           -10
         ]
-      ]
+      ],
+      "merge": false
     },
     {
       "id": "earL",
@@ -495,7 +538,8 @@ export const model = {
       "fill": "skin",
       "cx": -39,
       "cy": 1,
-      "r": 11
+      "r": 11,
+      "mergeGroup": "head"
     },
     {
       "id": "earR",
@@ -505,7 +549,9 @@ export const model = {
       "fill": "skin",
       "cx": 44,
       "cy": 1,
-      "r": 11
+      "r": 11,
+      "mergeGroup": "head",
+      "merge": true
     },
     {
       "id": "browL",
@@ -514,7 +560,6 @@ export const model = {
       "z": 22,
       "fill": "ink",
       "stroke": false,
-      "merge": false,
       "pts": [
         [
           -25,
@@ -532,7 +577,9 @@ export const model = {
           -25,
           1
         ]
-      ]
+      ],
+      "merge": false,
+      "layer": null
     },
     {
       "id": "browR",
@@ -569,7 +616,8 @@ export const model = {
       "stroke": false,
       "cx": -12,
       "cy": 4,
-      "r": 5
+      "r": 5,
+      "merge": false
     },
     {
       "id": "eyeR",
@@ -588,7 +636,6 @@ export const model = {
       "kind": "poly",
       "z": 22,
       "fill": "skin",
-      "merge": false,
       "pts": [
         [
           5,
@@ -606,7 +653,8 @@ export const model = {
           9,
           1
         ]
-      ]
+      ],
+      "merge": false
     },
     {
       "id": "mouth",
@@ -637,58 +685,61 @@ export const model = {
     {
       "id": "shapehpyuy",
       "bone": "armLowerL",
-      "kind": "circle",
-      "z": 23,
+      "z": 11,
       "fill": "skin",
-      "merge": true,
+      "kind": "circle",
       "cx": 85,
       "cy": -23,
       "r": 8,
+      "merge": true,
       "label": "ThumbR",
       "icon": "👍"
     },
     {
       "id": "shape5a485",
       "bone": "armLowerR",
-      "kind": "circle",
-      "z": 23,
+      "z": 10,
       "fill": "skin",
+      "kind": "circle",
       "cx": 84,
       "cy": 23,
       "r": 8,
       "label": "ThumbL",
-      "icon": "👍"
+      "icon": "👍",
+      "mergeGroup": "armR"
     },
     {
       "id": "shape9k3hj",
       "bone": "armLowerR",
-      "kind": "circle",
-      "z": 23,
+      "z": 10,
       "fill": "skin",
+      "kind": "circle",
       "cx": 103,
       "cy": 3,
       "r": 8,
+      "icon": "👆",
       "label": "Pointer",
-      "icon": "👆"
+      "mergeGroup": "armR"
     },
     {
       "id": "shapepy1qf",
       "bone": "armLowerR",
-      "kind": "circle",
-      "z": 23,
+      "z": 10,
       "fill": "skin",
+      "kind": "circle",
       "cx": 96,
       "cy": -17,
       "r": 8,
       "label": "PinkyL",
-      "icon": "🤙"
+      "icon": "🤙",
+      "mergeGroup": "armR"
     },
     {
       "id": "shapeugpyx",
       "bone": "armLowerL",
-      "kind": "circle",
-      "z": 23,
+      "z": 11,
       "fill": "skin",
+      "kind": "circle",
       "cx": 98,
       "cy": -9,
       "r": 8,
@@ -698,21 +749,23 @@ export const model = {
     {
       "id": "shape7vczj",
       "bone": "armLowerL",
-      "kind": "circle",
-      "z": 23,
+      "z": 11,
       "fill": "skin",
-      "cx": 94,
+      "kind": "circle",
+      "cx": 95,
       "cy": 15,
       "r": 8,
       "label": "PinkeR",
-      "icon": "🤙"
+      "icon": "🤙",
+      "merge": true,
+      "mergeGroup": null
     },
     {
       "id": "shapet7k8o",
       "bone": "root",
-      "kind": "circle",
       "z": 10,
       "fill": "ink",
+      "kind": "circle",
       "cx": 39,
       "cy": -32,
       "r": 9,
@@ -723,9 +776,9 @@ export const model = {
     {
       "id": "shapek5gxj",
       "bone": "root",
-      "kind": "circle",
       "z": 10,
       "fill": "ink",
+      "kind": "circle",
       "cx": -64,
       "cy": 40,
       "r": 7,
@@ -736,9 +789,9 @@ export const model = {
     {
       "id": "shapecevl7",
       "bone": "root",
-      "kind": "circle",
       "z": 10,
       "fill": "ink",
+      "kind": "circle",
       "cx": -18,
       "cy": -12,
       "r": 5,
@@ -749,52 +802,13 @@ export const model = {
     {
       "id": "shapelnmm6",
       "bone": "root",
-      "kind": "circle",
       "z": 10,
       "fill": "ink",
+      "kind": "circle",
       "cx": 37,
       "cy": 35,
       "r": 10,
       "label": "Dot-4",
-      "icon": "⚫️",
-      "groupWith": "cloth"
-    },
-    {
-      "id": "shaped71yx",
-      "bone": "root",
-      "kind": "circle",
-      "z": 10,
-      "fill": "ink",
-      "cx": 48,
-      "cy": -118,
-      "r": 3,
-      "label": "Dot-5",
-      "icon": "⚫️",
-      "groupWith": "cloth"
-    },
-    {
-      "id": "shapegtnz7",
-      "bone": "root",
-      "kind": "circle",
-      "z": 10,
-      "fill": "ink",
-      "cx": 76,
-      "cy": 64,
-      "r": 4,
-      "label": "Dot-6",
-      "icon": "⚫️",
-      "groupWith": "cloth"
-    },
-    {
-      "id": "shapesebg7",
-      "bone": "root",
-      "kind": "circle",
-      "z": 10,
-      "fill": "ink",
-      "cx": -9,
-      "cy": 54,
-      "r": 8,
-      "label": "Dot-7",
       "icon": "⚫️",
       "groupWith": "cloth"
     },
@@ -804,9 +818,6 @@ export const model = {
       "kind": "poly",
       "z": 5,
       "fill": "hair",
-      "label": "chest-divider",
-      "icon": "⎸",
-      "groupWith": "torso",
       "pts": [
         [
           76,
@@ -824,18 +835,21 @@ export const model = {
           119,
           -2
         ]
-      ]
+      ],
+      "label": "chest-divider",
+      "icon": "⎸",
+      "groupWith": "torso"
     },
     {
       "id": "shapeiigx0",
       "bone": "boneox6op",
-      "kind": "circle",
       "z": 5,
-      "fill": "fur",
-      "merge": false,
+      "fill": "Fur",
+      "kind": "circle",
       "cx": 102,
       "cy": 49,
       "r": 4,
+      "merge": false,
       "label": "Nipple",
       "groupWith": "torso"
     },
@@ -845,10 +859,6 @@ export const model = {
       "kind": "poly",
       "z": 5,
       "fill": "hair",
-      "merge": false,
-      "label": "underbrest",
-      "icon": "━",
-      "groupWith": "torso",
       "pts": [
         [
           120,
@@ -862,7 +872,324 @@ export const model = {
           123,
           16
         ]
+      ],
+      "hidden": false,
+      "merge": false,
+      "label": "underbrest",
+      "icon": "━",
+      "groupWith": "torso"
+    },
+    {
+      "id": "shaped71yx",
+      "bone": "root",
+      "z": 10,
+      "fill": "ink",
+      "kind": "circle",
+      "cx": 48,
+      "cy": -118,
+      "r": 3,
+      "label": "Dot-5",
+      "icon": "⚫️",
+      "groupWith": "cloth"
+    },
+    {
+      "id": "shapegtnz7",
+      "bone": "root",
+      "z": 10,
+      "fill": "ink",
+      "kind": "circle",
+      "cx": 76,
+      "cy": 64,
+      "r": 4,
+      "label": "Dot-6",
+      "icon": "⚫️",
+      "groupWith": "cloth"
+    },
+    {
+      "id": "shapesebg7",
+      "bone": "root",
+      "z": 10,
+      "fill": "ink",
+      "kind": "circle",
+      "cx": -9,
+      "cy": 54,
+      "r": 8,
+      "label": "Dot-7",
+      "icon": "⚫️",
+      "groupWith": "cloth"
+    },
+    {
+      "id": "shapeuhrve",
+      "bone": "head",
+      "z": 22,
+      "fill": "ink",
+      "kind": "poly",
+      "pts": [
+        [
+          -35,
+          52
+        ],
+        [
+          -36,
+          58
+        ],
+        [
+          -44,
+          70
+        ]
+      ],
+      "merge": false,
+      "layer": "front",
+      "label": "beard-1"
+    },
+    {
+      "id": "shapelw4wc",
+      "bone": "head",
+      "z": 22,
+      "fill": "ink",
+      "kind": "poly",
+      "pts": [
+        [
+          -18,
+          57
+        ],
+        [
+          -19,
+          63
+        ],
+        [
+          -20,
+          73
+        ]
+      ],
+      "merge": false,
+      "layer": "front",
+      "label": "beard-2"
+    },
+    {
+      "id": "shapej8ljx",
+      "bone": "head",
+      "z": 22,
+      "fill": "ink",
+      "kind": "poly",
+      "pts": [
+        [
+          36,
+          53
+        ],
+        [
+          39,
+          58
+        ],
+        [
+          44,
+          70
+        ]
+      ],
+      "merge": false,
+      "layer": "front",
+      "label": "beard-3"
+    },
+    {
+      "id": "mouthOpen",
+      "bone": "head",
+      "kind": "poly",
+      "z": 22,
+      "fill": "ink",
+      "stroke": false,
+      "hidden": true,
+      "label": "Mouth (open)",
+      "pts": [
+        [
+          -6,
+          45
+        ],
+        [
+          10,
+          44
+        ],
+        [
+          26,
+          45
+        ],
+        [
+          29,
+          49
+        ],
+        [
+          22,
+          54
+        ],
+        [
+          8,
+          55
+        ],
+        [
+          -4,
+          54
+        ],
+        [
+          -7,
+          49
+        ]
       ]
+    },
+    {
+      "id": "shapexwqak",
+      "bone": "head",
+      "z": 22,
+      "fill": "ink",
+      "kind": "poly",
+      "pts": [
+        [
+          29,
+          56
+        ],
+        [
+          30,
+          60
+        ],
+        [
+          34,
+          78
+        ]
+      ],
+      "merge": false,
+      "layer": "front",
+      "hidden": false,
+      "label": "beard-4"
+    },
+    {
+      "id": "shape5348n",
+      "bone": "bone35bhe",
+      "kind": "poly",
+      "z": 9.5,
+      "fill": "wood",
+      "pts": [
+        [
+          -186,
+          -10
+        ],
+        [
+          586,
+          4
+        ],
+        [
+          586,
+          9
+        ],
+        [
+          -188,
+          -3
+        ]
+      ],
+      "hidden": true,
+      "label": "spear.shaft",
+      "icon": "🥢",
+      "merge": true,
+      "mergeGroup": "spear"
+    },
+    {
+      "id": "shapenytyv",
+      "bone": "bone35bhe",
+      "kind": "poly",
+      "z": 9.5,
+      "fill": "Fur",
+      "pts": [
+        [
+          556,
+          24
+        ],
+        [
+          533,
+          6
+        ],
+        [
+          555,
+          -11
+        ],
+        [
+          637,
+          4
+        ]
+      ],
+      "hidden": true,
+      "label": "Spear.Edge",
+      "icon": "🔪",
+      "merge": true,
+      "mergeGroup": "spear"
+    },
+    {
+      "id": "shapee0wz6",
+      "bone": "bonecxzjy",
+      "kind": "poly",
+      "z": 10,
+      "fill": "wood",
+      "pts": [
+        [
+          -53,
+          4
+        ],
+        [
+          211,
+          -1
+        ],
+        [
+          196,
+          7
+        ],
+        [
+          -5,
+          7
+        ]
+      ],
+      "mergeGroup": "stick",
+      "merge": true,
+      "hidden": true
+    },
+    {
+      "id": "shape49ihi",
+      "bone": "bonecxzjy",
+      "kind": "poly",
+      "z": 10,
+      "fill": "wood",
+      "pts": [
+        [
+          163,
+          -9
+        ],
+        [
+          90,
+          11
+        ],
+        [
+          73,
+          13
+        ],
+        [
+          96,
+          -12
+        ],
+        [
+          119,
+          -11
+        ],
+        [
+          193,
+          13
+        ],
+        [
+          204,
+          -5
+        ],
+        [
+          168,
+          -14
+        ]
+      ],
+      "mergeGroup": "stick",
+      "merge": true,
+      "hidden": true
     }
   ],
   "actions": {
@@ -879,12 +1206,42 @@ export const model = {
               "head": 0,
               "armLowerL": -53.6,
               "armLowerR": -244,
-              "boneox6op": 89.8
+              "boneox6op": 89.8,
+              "bonef3y1l": 64.6
             },
             "root": {
               "x": 0,
-              "y": -1.477,
+              "y": -1.4770045466545252,
               "r": 0
+            },
+            "visible": {
+              "shape5a485": true,
+              "shapexwqak": true,
+              "spearShaft": false,
+              "spearTip": false
+            }
+          }
+        },
+        {
+          "t": 0.86,
+          "pose": {
+            "angles": {
+              "armUpperL": 121.5629412285929,
+              "armUpperR": 104.91819640760325,
+              "head": 1.3245061774464228,
+              "armLowerL": -50.93456827236603,
+              "armLowerR": -240.662244432835,
+              "boneox6op": 89.8,
+              "bonef3y1l": 64.6
+            },
+            "root": {
+              "x": 0,
+              "y": -0.7739947644201308,
+              "r": 0
+            },
+            "visible": {
+              "spearShaft": false,
+              "spearTip": false
             }
           }
         },
@@ -892,15 +1249,15 @@ export const model = {
           "t": 1.65,
           "pose": {
             "angles": {
-              "armUpperL": 119.6,
-              "armUpperR": 102.6,
+              "armUpperL": 119.57756070620972,
+              "armUpperR": 102.62685626469796,
               "head": 2.5,
-              "armLowerL": -48.6,
+              "armLowerL": -48.56900850101586,
               "armLowerR": -237.7
             },
             "root": {
               "x": 0,
-              "y": -0.15,
+              "y": -0.15007645412240928,
               "r": 0
             }
           }
@@ -928,7 +1285,7 @@ export const model = {
             },
             "root": {
               "x": 0,
-              "y": 0,
+              "y": -0.00276960614834456,
               "r": 0
             }
           }
@@ -940,7 +1297,7 @@ export const model = {
               "legUpperL": 84.7,
               "legLowerL": -25.3,
               "legUpperR": 87,
-              "legLowerR": -0.2,
+              "legLowerR": -0.20000000000000018,
               "armUpperL": 129.1,
               "armUpperR": 31.8,
               "head": 1,
@@ -970,7 +1327,10 @@ export const model = {
               "armLowerL": -51.1,
               "armUpperL": 135
             },
-            "root": {}
+            "root": {},
+            "visible": {
+              "mouthOpen": true
+            }
           }
         },
         {
@@ -986,6 +1346,10 @@ export const model = {
               "x": 0,
               "y": 0,
               "r": 0
+            },
+            "visible": {
+              "mouthOpen": true,
+              "mouth": false
             }
           }
         }
@@ -1014,8 +1378,8 @@ export const model = {
           "pose": {
             "angles": {
               "armLowerL": 85.2,
-              "armUpperL": -100,
-              "boneox6op": 88.8,
+              "armUpperL": -99.96766749582488,
+              "boneox6op": 88.81784449972166,
               "head": 7.4,
               "armUpperR": 80.3,
               "armLowerR": 5.9
@@ -1029,48 +1393,421 @@ export const model = {
         }
       ]
     },
-    "dig": {
-      "dur": 0.55,
+    "talk": {
+      "dur": 1.5,
       "loop": true,
       "keys": [
         {
           "t": 0,
           "pose": {
             "angles": {
-              "armUpperL": -55,
-              "armUpperR": -48,
-              "armLowerL": -35,
-              "armLowerR": -30,
-              "boneox6op": 88,
-              "head": -10
+              "head": 0,
+              "armUpperL": 140.5,
+              "armLowerL": -53.2,
+              "armUpperR": 44.5,
+              "armLowerR": 42.1,
+              "boneox6op": 89.1
+            },
+            "root": {},
+            "visible": {
+              "mouth": true,
+              "mouthOpen": false
+            }
+          }
+        },
+        {
+          "t": 0.25,
+          "pose": {
+            "angles": {
+              "head": 3.5,
+              "armUpperL": 143,
+              "armLowerL": -49,
+              "armUpperR": 41,
+              "armLowerR": 46,
+              "boneox6op": 90
+            },
+            "root": {},
+            "visible": {
+              "mouth": false,
+              "mouthOpen": true
+            }
+          }
+        },
+        {
+          "t": 0.5,
+          "pose": {
+            "angles": {
+              "head": -2,
+              "armUpperL": 105.3,
+              "armLowerL": -83.8,
+              "armUpperR": 47,
+              "armLowerR": 68.2,
+              "boneox6op": 88.5
             },
             "root": {
               "x": 0,
               "y": 0,
               "r": 0
+            },
+            "visible": {
+              "mouth": true,
+              "mouthOpen": false
             }
           }
         },
         {
-          "t": 0.28,
+          "t": 0.75,
           "pose": {
             "angles": {
-              "armUpperL": 75,
-              "armUpperR": 68,
-              "armLowerL": -8,
-              "armLowerR": -5,
-              "boneox6op": 101,
-              "head": 18
+              "head": 4,
+              "armUpperL": 115.2,
+              "armLowerL": -117.6,
+              "armUpperR": 40,
+              "armLowerR": 47,
+              "boneox6op": 90.3
             },
             "root": {
               "x": 0,
-              "y": -8,
+              "y": 0,
               "r": 0
+            },
+            "visible": {
+              "mouth": false,
+              "mouthOpen": true
+            }
+          }
+        },
+        {
+          "t": 1,
+          "pose": {
+            "angles": {
+              "head": -3,
+              "armUpperL": 137.5,
+              "armLowerL": -57,
+              "armUpperR": 48,
+              "armLowerR": 38,
+              "boneox6op": 88.19999999999999
+            },
+            "root": {},
+            "visible": {
+              "mouth": true,
+              "mouthOpen": false
+            }
+          }
+        },
+        {
+          "t": 1.11,
+          "pose": {
+            "angles": {
+              "head": -0.8613708803677635,
+              "armUpperL": 139.42476620766902,
+              "armLowerL": -54.433645056441314,
+              "armUpperR": 45.64750796840454,
+              "armLowerR": 40.566354943558686,
+              "boneox6op": 88.79881615349701,
+              "bone35bhe": -114.4
+            },
+            "root": {
+              "x": 0,
+              "y": 0,
+              "r": 0
+            },
+            "visible": {
+              "mouth": true,
+              "mouthOpen": false
+            }
+          }
+        },
+        {
+          "t": 1.24,
+          "pose": {
+            "angles": {
+              "head": 2,
+              "armUpperL": 142,
+              "armLowerL": -51,
+              "armUpperR": 42.5,
+              "armLowerR": 44,
+              "boneox6op": 89.6
+            },
+            "root": {},
+            "visible": {
+              "mouth": false,
+              "mouthOpen": true
             }
           }
         }
       ]
+    },
+    "hunt": {
+      "dur": 1.1,
+      "loop": false,
+      "keys": [
+        {
+          "t": 0,
+          "pose": {
+            "angles": {
+              "head": 5,
+              "armUpperR": 82.1,
+              "armLowerR": -84.7,
+              "armUpperL": 143.5,
+              "armLowerL": -125.3,
+              "boneox6op": 88.5,
+              "legUpperR": 72.2,
+              "legLowerR": 15.6,
+              "legUpperL": 102.1,
+              "legLowerL": -9.5,
+              "bone35bhe": -16.5
+            },
+            "root": {
+              "x": -6
+            },
+            "visible": {
+              "spearShaft": true,
+              "spearTip": true,
+              "shape5348n": true,
+              "shapenytyv": true
+            }
+          }
+        },
+        {
+          "t": 0.09,
+          "pose": {
+            "angles": {
+              "head": 3.325779274582716,
+              "armUpperR": 60,
+              "armLowerR": -47.9,
+              "armUpperL": 75.7,
+              "armLowerL": -61.8,
+              "boneox6op": 88.66742207254173,
+              "legUpperR": 71.79256030472389,
+              "legLowerR": 19.38336859899246,
+              "legUpperL": 102.93428128080346,
+              "legLowerL": -8.025456340905505,
+              "bone35bhe": -15.2
+            },
+            "root": {
+              "x": -3.0236075992581615,
+              "y": 0,
+              "r": 0
+            },
+            "visible": {
+              "spearShaft": true,
+              "spearTip": true,
+              "mouth": true,
+              "mouthOpen": true
+            }
+          }
+        },
+        {
+          "t": 0.21,
+          "pose": {
+            "angles": {
+              "head": -3.629162951326311,
+              "armUpperR": 16.1,
+              "armLowerR": 1.7,
+              "armUpperL": 34.2,
+              "armLowerL": -24.3,
+              "boneox6op": 89.36291629513264,
+              "legUpperR": 70.1,
+              "legLowerR": 35.1,
+              "legUpperL": 106.4,
+              "legLowerL": -1.9,
+              "bone35bhe": -12
+            },
+            "root": {
+              "x": 9.340734135691221,
+              "y": 0,
+              "r": 0
+            },
+            "visible": {
+              "spearShaft": true,
+              "spearTip": true,
+              "shape5348n": true,
+              "shapenytyv": true
+            }
+          }
+        },
+        {
+          "t": 0.31,
+          "pose": {
+            "angles": {
+              "head": -4,
+              "armUpperR": 15,
+              "armLowerR": -8.8,
+              "armUpperL": 60.2,
+              "armLowerL": -59,
+              "boneox6op": 89.4,
+              "legUpperR": 72.7,
+              "legLowerR": 22.9,
+              "legUpperL": 104.7,
+              "legLowerL": -15,
+              "bone35bhe": -9.7
+            },
+            "root": {
+              "x": 10,
+              "y": 0,
+              "r": 0
+            },
+            "visible": {
+              "spearShaft": true,
+              "spearTip": true,
+              "shape5348n": true,
+              "shapenytyv": true,
+              "mouth": true,
+              "mouthOpen": false
+            }
+          }
+        },
+        {
+          "t": 0.63,
+          "pose": {
+            "angles": {
+              "head": -3,
+              "armUpperR": 30.1,
+              "armLowerR": -21.7,
+              "armUpperL": 51.7,
+              "armLowerL": -45.6,
+              "boneox6op": 87.6,
+              "legUpperR": 70.7,
+              "legLowerR": 10.1,
+              "legUpperL": 106.1,
+              "legLowerL": -21.6,
+              "bone35bhe": -10.4
+            },
+            "root": {
+              "x": 9,
+              "y": 0,
+              "r": 0
+            },
+            "visible": {
+              "spearShaft": true,
+              "spearTip": true,
+              "shape5348n": true,
+              "shapenytyv": true,
+              "mouthOpen": true
+            }
+          }
+        },
+        {
+          "t": 0.95,
+          "pose": {
+            "angles": {
+              "head": 1,
+              "armUpperR": 46.4,
+              "armLowerR": -17.3,
+              "armUpperL": 110.9,
+              "armLowerL": -92.4,
+              "boneox6op": 89.1,
+              "legUpperR": 77.2,
+              "legLowerR": 11.6,
+              "legUpperL": 100.1,
+              "legLowerL": -8.5,
+              "bone35bhe": -17.7
+            },
+            "root": {
+              "x": 0,
+              "y": 0,
+              "r": 0
+            },
+            "visible": {
+              "spearShaft": true,
+              "spearTip": true,
+              "shape5348n": true,
+              "shapenytyv": true,
+              "mouthOpen": true,
+              "mouth": false
+            }
+          }
+        }
+      ]
+    },
+    "dig": {
+      "dur": 0.9,
+      "loop": true,
+      "keys": [
+        {
+          "t": 0,
+          "pose": {
+            "angles": {
+              "legUpperL": 81.3,
+              "legLowerL": -33.7,
+              "legUpperR": 2.9,
+              "legLowerR": 136.3,
+              "armUpperL": 127.4,
+              "armLowerL": -24.4,
+              "head": -8,
+              "armUpperR": -5,
+              "armLowerR": 52.4
+            },
+            "root": {
+              "x": 0,
+              "y": 19,
+              "r": 38
+            },
+            "visible": {
+              "shapee0wz6": true,
+              "shape49ihi": true
+            }
+          }
+        },
+        {
+          "t": 0.27,
+          "pose": {
+            "angles": {
+              "legUpperL": 77.5,
+              "legLowerL": -33.7,
+              "legUpperR": -3.6999999999999997,
+              "legLowerR": 136.3,
+              "armUpperL": 78.3,
+              "armLowerL": -22.4,
+              "head": -8,
+              "armUpperR": -30.4,
+              "armLowerR": 75.7
+            },
+            "root": {
+              "x": 0,
+              "y": 19,
+              "r": 45
+            },
+            "visible": {}
+          }
+        },
+        {
+          "t": 0.6,
+          "pose": {
+            "angles": {
+              "legUpperL": 81.3,
+              "legLowerL": -33.7,
+              "legUpperR": 2.9,
+              "legLowerR": 136.3,
+              "armUpperL": 28.9,
+              "armLowerL": -24.4,
+              "head": -8,
+              "armUpperR": -5,
+              "armLowerR": 40.3,
+              "boneox6op": 89.4
+            },
+            "root": {
+              "x": 0,
+              "y": 19,
+              "r": 38
+            },
+            "visible": {}
+          }
+        }
+      ]
     }
+  },
+  "merge": true,
+  "name": "Caveman-1.0",
+  "mergeGroupColors": {
+    "body": "#8659b5",
+    "head": "#b5457a",
+    "armL": "#3a8f5c",
+    "armR": "#c25a3a",
+    "Spear": "#8659b5",
+    "spear": "#c98a1f",
+    "stick": "#a0522d"
   }
-} satisfies PuppetModel;
+};
 export default model;

@@ -6,11 +6,7 @@ import type { Plugin } from 'vite';
 
 // Directories scanned for puppet model files.
 // Relative paths are resolved from the monorepo root; absolute paths are used as-is.
-const MODEL_DIRS = [
-  'apps/remotion/src/characters/puppet',
-  '/Users/gtrofymov/git/clampers',
-  '/Users/gtrofymov/git/clampers/Prehistoric Character Animation/remotion-puppet/src',
-];
+const MODEL_DIRS = ['apps/remotion/src/characters/puppet'];
 const MODEL_PATTERN = /(?<!\.test)\.(js|ts)$/;
 const ROOT = path.resolve(__dirname, '../..');
 

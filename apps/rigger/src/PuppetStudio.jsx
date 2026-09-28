@@ -415,7 +415,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
                   ) : <span style={{ width: 13, flex: 'none' }}></span>}
                   <span style={{ flex: 'none' }}>{rb.icon || boneIcon(r.id)}</span>
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rb.label || r.id}{boneSide(r.id) ? ' ' + boneSide(r.id) : ''}</span>
-                  {model.merge && boneMerges(rb) && (() => { const g = groupOfIn(bones, rb); return g ? <span style={{ marginLeft: 'auto', width: 10, height: 10, borderRadius: '50%', background: groupColor(g), flex: 'none', border: '1px solid rgba(0,0,0,0.2)', display: 'inline-block' }} title={'Merge group: ' + g} /> : <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.4, flex: 'none' }} title="Seamless, no named group">{layerOf(bones, r.id) === 'front' ? '△' : '▽'}</span>; })()}
+                  {model.merge && boneMerges(rb) && (() => { const g = groupOfIn(bones, rb); return g ? <span style={{ marginLeft: 'auto', width: 10, height: 10, borderRadius: '50%', background: colorForGroup(g), flex: 'none', border: '1px solid rgba(0,0,0,0.2)', display: 'inline-block' }} title={'Merge group: ' + g} /> : <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.4, flex: 'none' }} title="Seamless, no named group">{layerOf(bones, r.id) === 'front' ? '△' : '▽'}</span>; })()}
                 </div>
               );
             }
@@ -430,7 +430,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
                 ) : <span style={{ width: 13, flex: 'none' }}></span>}
                 <span style={{ flex: 'none' }}>{rs.icon || shapeIcon(rs)}</span>
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: rs.hidden ? 0.45 : 1 }}>{rs.label || r.id}</span>
-                {rsMerged && (() => { const g = groupOfIn(bones, rs); return g ? <span style={{ marginLeft: 'auto', width: 10, height: 10, borderRadius: '50%', background: groupColor(g), flex: 'none', border: '1px solid rgba(0,0,0,0.2)', display: 'inline-block' }} title={'Merge group: ' + g} /> : <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.4, flex: 'none' }} title="Seamless, no named group">{layerOf(bones, rs) === 'front' ? '△' : '▽'}</span>; })()}
+                {rsMerged && (() => { const g = groupOfIn(bones, rs); return g ? <span style={{ marginLeft: 'auto', width: 10, height: 10, borderRadius: '50%', background: colorForGroup(g), flex: 'none', border: '1px solid rgba(0,0,0,0.2)', display: 'inline-block' }} title={'Merge group: ' + g} /> : <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.4, flex: 'none' }} title="Seamless, no named group">{layerOf(bones, rs) === 'front' ? '△' : '▽'}</span>; })()}
                 <span onClick={(e) => { e.stopPropagation(); toggleHidden(r.id); }} title={rs.hidden ? 'Hidden — click to show' : 'Visible — click to hide'} style={{ fontSize: 12, opacity: 0.6, cursor: 'pointer', flex: 'none', marginLeft: rsMerged ? 5 : 'auto' }}>{rs.hidden ? '🚫' : '👁️'}</span>
               </div>
             );

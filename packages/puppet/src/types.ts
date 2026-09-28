@@ -42,7 +42,7 @@ export interface Shape {
 export interface Pose {
   angles: Record<string, number | undefined>;
   root?: { x?: number; y?: number; r?: number };
-  visible?: Record<string, boolean>;
+  visible?: Record<string, boolean | undefined>;
 }
 
 export interface ActionKey {
