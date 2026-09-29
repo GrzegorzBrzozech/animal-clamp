@@ -1,11 +1,10 @@
 import React from "react";
 import { AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import { PaperBackground, PencilDefs, Sketch, INK, PASTEL, cavemanModel, RockPencil, ChippedTreePencil } from "~/characters";
+import { INK, PASTEL, cavemanModel, WildernessBackdrop } from "~/characters";
 import { Puppet, samplePose, blend } from "@animal-clamp/puppet";
 import type { Pose, PuppetModel } from "@animal-clamp/puppet";
 import { montserrat } from "~/lib/fonts";
 import { popIn } from "~/lib/animations";
-import { random } from "remotion";
 import {
   FRAME_SCRATCH_START,
   FRAME_TALK1_START,
@@ -78,47 +77,6 @@ const PUPPET_Y_NUDGE = 40;
 // viewBox is "-220 -80 700 640" — its own box-center (local x=130) sits well right
 // of the character's actual silhouette (centered near local x=0).
 const PUPPET_VISUAL_CENTER_OFFSET = 130;
-
-const ROCKS = [
-  { x: 150, y: GROUND_Y + 145, r: 24 },
-  { x: 670, y: GROUND_Y + 200, r: 38 },
-  { x: 1150, y: GROUND_Y + 65, r: 30 },
-  { x: 1760, y: GROUND_Y + 115, r: 46 },
-];
-
-/** Scattered dirt texture — dots and short scratch-marks simulating ground relief. */
-const GroundTexture: React.FC = () => (
-  <>
-    {Array.from({ length: 55 }, (_, i) => {
-      const x = 20 + random(`groundMarkX-${i}`) * (W - 40);
-      const y = GROUND_Y + 14 + random(`groundMarkY-${i}`) * (H - GROUND_Y - 28);
-      const isDot = random(`groundMarkKind-${i}`) > 0.4;
-      const op = 0.25 + random(`groundMarkOp-${i}`) * 0.3;
-      if (isDot) {
-        const r = 1.5 + random(`groundMarkR-${i}`) * 2.5;
-        return <circle key={i} cx={x} cy={y} r={r} fill={INK} opacity={op} />;
-      }
-      const len = 6 + random(`groundMarkLen-${i}`) * 10;
-      const angle = random(`groundMarkAngle-${i}`) * Math.PI;
-      const dx = Math.cos(angle) * len, dy = Math.sin(angle) * len;
-      return (
-        <line
-          key={i}
-          x1={x - dx / 2} y1={y - dy / 2} x2={x + dx / 2} y2={y + dy / 2}
-          stroke={INK} strokeWidth={1.6} strokeLinecap="round" opacity={op}
-        />
-      );
-    })}
-  </>
-);
-
-const Rocks: React.FC = () => (
-  <>
-    {ROCKS.map((rock, i) => (
-      <RockPencil key={i} x={rock.x} y={rock.y} r={rock.r} />
-    ))}
-  </>
-);
 
 // Official Telegram brand mark (simple-icons "telegram", CC0) — a single compound
 // path: the outer disc and the paper-plane cutout share one fill-rule="evenodd"
@@ -225,18 +183,9 @@ export const CavemanTelegramScene: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ fontFamily: montserrat.fontFamily }}>
-      <PaperBackground />
+      <WildernessBackdrop width={W} height={H} groundY={GROUND_Y} frame={frame} seed="caveman-telegram" />
 
       <svg width={W} height={H} style={{ position: "absolute", top: 0, left: 0, overflow: "visible" }}>
-        <PencilDefs scale={2.5} />
-        <Sketch fill="#C87B5266" width={3.5}>
-          <rect x={0} y={GROUND_Y} width={W} height={H - GROUND_Y} />
-        </Sketch>
-        <GroundTexture />
-        <Rocks />
-        <ChippedTreePencil x={70} groundY={GROUND_Y} height={1050} seed="treeL" />
-        <ChippedTreePencil x={1850} groundY={GROUND_Y} height={560} mirror seed="treeR" />
-
         {/* Puppet's ground shadow. The viewBox's own bounding box isn't centered on the
             character (vb spans x:[-220,480], character silhouette sits near local x=0),
             so the shadow needs the same offset correction the container's centering skips. */}

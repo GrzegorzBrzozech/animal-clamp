@@ -79,6 +79,7 @@ export { Seagull } from "./svg/Seagull";
 export { GrandThrone } from "./svg/GrandThrone";
 export { RockPencil, ROCK_SHAPE } from "./svg/RockPencil";
 export { ChippedTreePencil } from "./svg/ChippedTreePencil";
+export { WildernessBackdrop } from "./svg/WildernessBackdrop";
 export { Guillotine } from "./svg/Guillotine";
 export { KingPencil } from "./svg/KingPencil";
 export { PrincessPencil } from "./svg/PrincessPencil";
