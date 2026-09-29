@@ -68,6 +68,8 @@ import { HomoErectus } from "~/compositions/lab-complex/homo-erectus";
 import { homoErectusConfig } from "~/compositions/lab-complex/homo-erectus/config";
 import { CavemanSubscribe } from "~/compositions/caveman-subscribe";
 import { cavemanSubscribeConfig } from "~/compositions/caveman-subscribe/config";
+import { CavemanTelegram } from "~/compositions/caveman-telegram";
+import { cavemanTelegramConfig } from "~/compositions/caveman-telegram/config";
 import { CharacterGallery } from "~/compositions/lab-simple/CharacterGallery";
 import { PredationPencilScene } from "~/compositions/lab-simple/PredationPencilScene";
 import { VegansVsHunters } from "~/compositions/lab-simple/VegansVsHunters";
@@ -343,6 +345,14 @@ export const RemotionRoot: React.FC = () => {
           fps={cavemanSubscribeConfig.fps}
           width={cavemanSubscribeConfig.width}
           height={cavemanSubscribeConfig.height}
+        />
+        <Composition
+          id={cavemanTelegramConfig.id}
+          component={CavemanTelegram}
+          durationInFrames={cavemanTelegramConfig.durationInFrames}
+          fps={cavemanTelegramConfig.fps}
+          width={cavemanTelegramConfig.width}
+          height={cavemanTelegramConfig.height}
         />
       </Folder>
 

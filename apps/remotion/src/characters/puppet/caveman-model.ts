@@ -7,7 +7,9 @@ export const model = {
     "hair": "#38372e",
     "Fur": "#8f8676",
     "wood": "#8a5a34",
-    "stone": "#6b6b6b"
+    "stone": "#6b6b6b",
+    "root": "#81086b",
+    "greens": "#47760f"
   },
   "bones": [
     {
@@ -47,7 +49,7 @@ export const model = {
       "len": 80,
       "drawAs": "limb",
       "width": 52,
-      "z": 6,
+      "z": 12,
       "endCap": false,
       "merge": true,
       "layer": null,
@@ -62,7 +64,7 @@ export const model = {
       "len": 78,
       "drawAs": "limb",
       "width": 45,
-      "z": 11,
+      "z": 14,
       "endCap": true,
       "mergeGroup": "armL"
     },
@@ -75,7 +77,7 @@ export const model = {
       "len": 80,
       "drawAs": "limb",
       "width": 52,
-      "z": 6,
+      "z": 10,
       "endCap": false,
       "mergeGroup": "body"
     },
@@ -186,6 +188,19 @@ export const model = {
       "label": "stick",
       "icon": "🪾",
       "mergeGroup": "stick"
+    },
+    {
+      "id": "bone3im6l",
+      "parent": "armLowerR",
+      "x": -11,
+      "y": 2,
+      "angle": 14.6,
+      "len": 100,
+      "drawAs": null,
+      "width": 28,
+      "z": 8,
+      "label": "Beet",
+      "icon": "🫜"
     }
   ],
   "shapes": [
@@ -1190,6 +1205,44 @@ export const model = {
       "mergeGroup": "stick",
       "merge": true,
       "hidden": true
+    },
+    {
+      "id": "shape68tki",
+      "bone": "bone3im6l",
+      "kind": "poly",
+      "z": 25,
+      "fill": "root",
+      "pts": [
+        [37, 8],
+        [59, -21],
+        [51, -70],
+        [71, -36],
+        [84, 24],
+        [80, 65],
+        [50, 73],
+        [30, 39]
+      ],
+      "label": "root",
+      "icon": "🫚",
+      "hidden": true
+    },
+    {
+      "id": "shapedv8qu",
+      "bone": "bone3im6l",
+      "kind": "poly",
+      "z": 26,
+      "fill": "greens",
+      "pts": [
+        [51, 55],
+        [68, 54],
+        [75, 116],
+        [66, 95],
+        [43, 99],
+        [49, 84]
+      ],
+      "label": "tops",
+      "icon": "🥬",
+      "hidden": true
     }
   ],
   "actions": {
@@ -1793,6 +1846,95 @@ export const model = {
               "r": 38
             },
             "visible": {}
+          }
+        }
+      ]
+    },
+    "eat": {
+      "dur": 1.5,
+      "loop": true,
+      "keys": [
+        {
+          "t": 0.01,
+          "pose": {
+            "angles": {
+              "armLowerL": -70.7,
+              "armUpperL": 120.5,
+              "armLowerR": 95.6,
+              "armUpperR": 56.4
+            },
+            "root": {},
+            "visible": {
+              "shape68tki": true,
+              "shapedv8qu": true
+            }
+          }
+        },
+        {
+          "t": 0.41,
+          "pose": {
+            "angles": {
+              "armLowerL": -70.7,
+              "armUpperL": 108.3,
+              "armLowerR": 113.30000000000004,
+              "armUpperR": 82.8
+            },
+            "root": {
+              "x": 0,
+              "y": 0,
+              "r": 0
+            },
+            "visible": {
+              "mouthOpen": true
+            }
+          }
+        },
+        {
+          "t": 0.79,
+          "pose": {
+            "angles": {
+              "armLowerL": -60.5,
+              "armUpperL": 113.1,
+              "armLowerR": 93.2,
+              "armUpperR": 75.41134569187254
+            },
+            "root": {
+              "x": 0,
+              "y": 0,
+              "r": 0
+            }
+          }
+        },
+        {
+          "t": 1.01,
+          "pose": {
+            "angles": {
+              "armLowerL": -70.7,
+              "armUpperL": 112.5,
+              "armLowerR": 93.74848942893624,
+              "armUpperR": 71.06654479943727
+            },
+            "root": {
+              "x": 0,
+              "y": 0,
+              "r": 0
+            }
+          }
+        },
+        {
+          "t": 1.22,
+          "pose": {
+            "angles": {
+              "armLowerL": -45.7,
+              "armUpperL": 100,
+              "armLowerR": 94.47721807935491,
+              "armUpperR": 65.29399801248675
+            },
+            "root": {
+              "x": 0,
+              "y": 0,
+              "r": 0
+            }
           }
         }
       ]
