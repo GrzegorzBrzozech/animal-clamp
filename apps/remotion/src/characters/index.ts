@@ -40,6 +40,35 @@ export { ButterflyPencil } from "./svg/ButterflyPencil";
 // Pencil-on-paper school / science objects (books, stamp, flask, building, page, head).
 export { BookPencil, StampMark, FlaskPencil, BuildingPencil, PagePencil, HeadPencil, ManuscriptPencil, HousePencil } from "./svg/SchoolObjects";
 export { PersonPencil, type PersonPose } from "./svg/PersonPencil";
+export { WomanPencil, type WomanPencilProps, type WomanPose } from "./svg/WomanPencil";
+export { DiggerPencil } from "./svg/DiggerPencil";
+// NOTE: `PortraitPencil` (the drawn-face framed portrait) is archived in
+// `svg/_archive/PortraitPencil.tsx` — use `~/components/PortraitPhoto` for a
+// framed REAL photograph, which is what the explainers now use.
+
+// Pencil-on-paper economics objects (sand pile, gold bar, sacks, price tags,
+// thought bubbles, and the needs a good can satisfy).
+export {
+  SandPilePencil,
+  GoldBarPencil,
+  SandSackPencil,
+  PriceTagPencil,
+  DressPencil,
+  RoadPencil,
+  SandboxPencil,
+  BeachPencil,
+  SandPitPencil,
+  SandSprayPencil,
+  CratePencil,
+  JarPencil,
+  ShovelPencil,
+  ThoughtBubblePencil,
+  CoinPencil,
+  VersusMark,
+  SAND,
+  GOLD,
+  SPRAY_LIFE,
+} from "./svg/EconObjects";
 export { EmotivePerson } from "./svg/EmotivePerson";
 export { KneelingPersonPencil } from "./svg/KneelingPersonPencil";
 export { MilitaryPencil } from "./svg/MilitaryPencil";
@@ -48,6 +77,8 @@ export { OfficerPencil } from "./svg/OfficerPencil";
 export { BarrierPencil } from "./svg/BarrierPencil";
 export { Seagull } from "./svg/Seagull";
 export { GrandThrone } from "./svg/GrandThrone";
+export { RockPencil, ROCK_SHAPE } from "./svg/RockPencil";
+export { ChippedTreePencil } from "./svg/ChippedTreePencil";
 export { Guillotine } from "./svg/Guillotine";
 export { KingPencil } from "./svg/KingPencil";
 export { PrincessPencil } from "./svg/PrincessPencil";

@@ -65,7 +65,7 @@ export function Puppet({ model, action, time = 0, pose: poseProp, wobble = true,
   const groupEls: Record<string, React.ReactNode[]> = {};
   const groupMinZ: Record<string, number> = {};
 
-  const resolveGroup = (node: { mergeGroup?: string; layer?: string | null }): string => {
+  const resolveGroup = (node: { mergeGroup?: string | null; layer?: string | null }): string => {
     if (node.mergeGroup) return node.mergeGroup;
     return node.layer === 'front' ? '__front__' : '__back__';
   };

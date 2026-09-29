@@ -50,6 +50,14 @@ randomness, no `useState`.
 7. **Hand-drawn wobble is stable, not boiling.** The roughen filters use a fixed
    `seed`, so lines don't shimmer frame to frame. Motion comes from transforms
    (breathe, blink, walk, leap), not from re-randomising the line.
+8. **Never put a perfectly straight axis-aligned line inside a filtered `<g>`.**
+   The `rough*` filters use the default `objectBoundingBox` filter units, so a
+   group whose contents have a **zero-area bbox** (one exactly horizontal or
+   exactly vertical `<line>`) computes a zero-size filter region and renders
+   **nothing at all** — silently. Either nudge one endpoint by a pixel on the
+   other axis (`y1={95} y2={97}`, which is more hand-drawn anyway), or put the
+   line in the same `<g>` as another shape that gives the group area. This is
+   what made road markings, ground lines and graph gridlines vanish.
 
 ---
 
@@ -180,6 +188,16 @@ Special, character-specific extras are fine (frog blink, amoeba morph, deer
 | `ButterflyPencil`| (prey) комаха          | faceted wings flap                            |
 
 All are pure graphite by default; pass `color` for a coloured-pencil hatch.
+
+**Non-creature pencil sets** (same system, `size`-driven standalone `<svg>`s):
+
+| File | Exports |
+| ---- | ------- |
+| `SchoolObjects.tsx` | `BookPencil` `StampMark` `FlaskPencil` `BuildingPencil` `PagePencil` `ManuscriptPencil` `HousePencil` `HeadPencil` |
+| `EconObjects.tsx` | `SandPilePencil` (optional numbered pennant via `label`) `GoldBarPencil` `SandSackPencil` `PriceTagPencil` `DressPencil` `RoadPencil` `SandboxPencil` `BeachPencil` `SandPitPencil` `SandSprayPencil` `CratePencil` `ShovelPencil` `ThoughtBubblePencil` `VersusMark` |
+| ~~`PortraitPencil.tsx`~~ | **ARCHIVED** → `svg/_archive/PortraitPencil.tsx`. `PortraitPencil` (framed drawn bust + name plaque; identity via `hair` × `beard`) + `PortraitWire`. No longer exported from `~/characters`; use `~/components/PortraitPhoto` for the same frame with a REAL photograph inside. Kept for figures we have no likeness of. |
+| `DiggerPencil.tsx` | `DiggerPencil` — `PersonPencil` + a shovel driven straight up/down on a `swing` (0…1) prop. Pair with `SandSprayPencil`, feeding both the same dig phase. |
+| `WomanPencil.tsx` | `WomanPencil` (versioned in `woman-pencil/`) — the standard FEMALE figure next to `PersonPencil`: narrow shoulders → cinched waist → bell dress whose hem hides the legs (ankles + shoes peek out on the same ground line), long faceted hair, side-swept bangs, lashed round eyes, blush. Props `size, facing, pose ("stand" \| "present"), color` (dress), `hairColor` — drop-in for `PersonPencil`. |
 
 Preview: **CharacterLab** composition → `PencilGallery` (macket layout).
 Motion demo: **PredationPencil** composition (predators meet prey on paper).

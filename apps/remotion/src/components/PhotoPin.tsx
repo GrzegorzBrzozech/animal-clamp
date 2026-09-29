@@ -1,11 +1,13 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, Img, staticFile, interpolate, spring } from "remotion";
+import { useCurrentFrame, useVideoConfig, Img, OffthreadVideo, Loop, staticFile, interpolate, spring } from "remotion";
 import { montserrat } from "~/lib/fonts";
 import { INK, PAPER } from "~/characters/svg/_pencil";
 
 type Props = {
   /** Path under public/, e.g. "projects/rothbard/00-00_rothbard-portrait.jpg". */
   src: string;
+  /** "photo" (default, `<Img>`) or "video" (`<OffthreadVideo>`) — same pinned-on-paper frame either way. */
+  kind?: "photo" | "video";
   width?: number;
   height?: number;
   /** Frame at which it pops onto the paper. */
@@ -21,17 +23,27 @@ type Props = {
   hold?: "tape" | "pin";
   /** CSS objectFit for the image inside the frame. Default "cover". */
   objectFit?: React.CSSProperties["objectFit"];
+  /**
+   * `kind="video"` only. The clip's own real length in composition frames —
+   * pass this whenever the panel may stay on screen longer than the source
+   * clip, so it's looped instead of freezing on the last decoded frame.
+   */
+  sourceDurationInFrames?: number;
+  /** `kind="video"` only. Seconds into the source clip to start playback from. */
+  startFromSec?: number;
   style?: React.CSSProperties;
 };
 
 /**
- * A real photograph presented as if pinned/taped onto the paper notebook — the
- * bridge that lets historical images live inside the pencil-on-paper look.
- * White photo border, slight tilt, masking-tape or a push-pin, pencil caption.
- * Deterministic; reusable across history/explainer videos.
+ * A real photograph OR video clip presented as if pinned/taped onto the paper
+ * notebook — the bridge that lets real footage live inside the pencil-on-paper
+ * look without ever going full-bleed. White mat border, slight tilt,
+ * masking-tape or a push-pin, pencil caption. Deterministic; reusable across
+ * history/explainer videos.
  */
 export const PhotoPin: React.FC<Props> = ({
   src,
+  kind = "photo",
   width = 460,
   height = 560,
   delay = 0,
@@ -41,6 +53,8 @@ export const PhotoPin: React.FC<Props> = ({
   date,
   hold = "tape",
   objectFit = "cover",
+  sourceDurationInFrames,
+  startFromSec = 0,
   style,
 }) => {
   const frame = useCurrentFrame();
@@ -50,6 +64,11 @@ export const PhotoPin: React.FC<Props> = ({
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+
+  const mediaStyle: React.CSSProperties = { width: "100%", height: "100%", objectFit, transform: `scale(${scale})` };
+  const video = (
+    <OffthreadVideo src={staticFile(src)} muted startFrom={Math.round(startFromSec * fps)} style={mediaStyle} />
+  );
 
   return (
     <div
@@ -73,7 +92,15 @@ export const PhotoPin: React.FC<Props> = ({
         }}
       >
         <div style={{ width: "100%", height, overflow: "hidden", background: "#000" }}>
-          <Img src={staticFile(src)} style={{ width: "100%", height: "100%", objectFit, transform: `scale(${scale})` }} />
+          {kind === "video" ? (
+            sourceDurationInFrames ? (
+              <Loop durationInFrames={sourceDurationInFrames}>{video}</Loop>
+            ) : (
+              video
+            )
+          ) : (
+            <Img src={staticFile(src)} style={mediaStyle} />
+          )}
         </div>
         {caption ? (
           <div

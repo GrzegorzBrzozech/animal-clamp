@@ -10,7 +10,7 @@ export interface Bone {
   width?: number;
   endCap?: boolean;
   merge?: boolean;
-  mergeGroup?: string;
+  mergeGroup?: string | null;
   layer?: string | null;
   label?: string;
   icon?: string;
@@ -32,7 +32,7 @@ export interface Shape {
   closed?: boolean;
   hidden?: boolean;
   merge?: boolean;
-  mergeGroup?: string;
+  mergeGroup?: string | null;
   layer?: string | null;
   label?: string;
   icon?: string;

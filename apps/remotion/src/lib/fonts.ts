@@ -1,6 +1,7 @@
 import { continueRender, delayRender, staticFile } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Montserrat";
 import { loadFont as loadPhilosopher } from "@remotion/google-fonts/Philosopher";
+import { loadFont as loadPtMono } from "@remotion/google-fonts/PTMono";
 
 /**
  * Loads the project font once with Cyrillic + Latin support.
@@ -18,6 +19,17 @@ export const montserrat = loadFont("normal", {
 export const philosopher = loadPhilosopher("italic", {
   weights: ["400", "700"],
   subsets: ["cyrillic"],
+});
+
+/**
+ * PT Mono — ParaType's monospace, designed for Cyrillic + Latin. The
+ * "typewriter / official document" voice for quoted definitions in Ukrainian
+ * (SpecialElite & friends look the part but ship Latin only → tofu on Cyrillic).
+ * Ships a single weight (400).
+ */
+export const ptMono = loadPtMono("normal", {
+  weights: ["400"],
+  subsets: ["cyrillic", "latin"],
 });
 
 // ── Local gothic fonts (copied to public/fonts/) ──────────────────────────────

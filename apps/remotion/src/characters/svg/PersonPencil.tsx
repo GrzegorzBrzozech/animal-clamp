@@ -31,26 +31,36 @@ export const PersonPencil: React.FC<{
   const SR = "88,84";
   const SL = "42,84";
 
+  // Every arm path (straight or elbow-bent) is scaled from the shoulder so its
+  // total shoulder→hand path length is the same ~50 units — otherwise a
+  // straight hanging arm reads visibly shorter than a bent raised one.
   const rightArm: Record<PersonPose, string> = {
-    stand: "88,84 96,132",
-    megaphone: "88,84 112,70 128,58",
-    salute: "88,84 104,60 84,40",
-    present: "88,84 118,96 140,96",
+    stand: "88,84 96,133",
+    megaphone: "88,84 113,69 130,57",
+    salute: "88,84 102,63 85,45",
+    present: "88,84 116,95 136,95",
   };
   const leftArm: Record<PersonPose, string> = {
-    stand: "42,84 34,132",
-    megaphone: "42,84 34,128",
-    salute: "42,84 34,128",
-    present: "42,84 34,128",
+    stand: "42,84 34,133",
+    megaphone: "42,84 33,133",
+    salute: "42,84 33,133",
+    present: "42,84 33,133",
   };
   const handR: Record<PersonPose, [number, number]> = {
-    stand: [96, 132],
-    megaphone: [128, 58],
-    salute: [84, 40],
-    present: [140, 96],
+    stand: [96, 133],
+    megaphone: [130, 57],
+    salute: [85, 45],
+    present: [136, 95],
+  };
+  const handL: Record<PersonPose, [number, number]> = {
+    stand: [34, 133],
+    megaphone: [33, 133],
+    salute: [33, 133],
+    present: [33, 133],
   };
 
   const [hrx, hry] = handR[pose];
+  const [hlx, hly] = handL[pose];
 
   return (
     <div style={{ position: "relative", width, height: size, ...style }}>
@@ -78,8 +88,9 @@ export const PersonPencil: React.FC<{
           <polyline points={leftArm[pose]} />
           <polyline points={rightArm[pose]} />
         </Sketch>
-        {/* hand */}
+        {/* hands */}
         <circle cx={hrx} cy={hry} r={6} fill={PAPER} stroke={INK} strokeWidth={4} />
+        <circle cx={hlx} cy={hly} r={6} fill={PAPER} stroke={INK} strokeWidth={4} />
 
         {/* head */}
         <Part width={5}>
