@@ -1,7 +1,7 @@
 // puppet-studio.jsx — UNIVERSAL editor for the puppet engine.
 // Two modes: RIG (edit bones + shape points) and ACTION (keyframe timeline).
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, layerOf, DEFAULT_PUPPET } from '@animal-clamp/puppet';
+import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, layerOf, effectiveZ, DEFAULT_PUPPET } from '@animal-clamp/puppet';
 
   const RAD = Math.PI / 180, DEG = 180 / Math.PI;
   const PAPER = '#f4f1e9', ACCENT = '#c25a3a', BONE = '#2f6fd0';
@@ -20,6 +20,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
     borderRadius: i % 2 ? '12px 5px 11px 6px' : '6px 12px 5px 13px', fontWeight: active ? 700 : 400,
   });
   const STORE = 'puppet.model.v4';
+  const SERVER_PATH_STORE = 'puppet.serverPath.v1';
   const HAS_FS = typeof window !== 'undefined' && 'showOpenFilePicker' in window;
 
   // ---- IndexedDB helpers for persisting FileSystemFileHandles ----
@@ -500,6 +501,15 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
                 <span style={{ fontSize: 15, minWidth: 26, textAlign: 'center' }}>{sb.z || 0}</span>
                 <button onClick={() => upBone(sb.id, { z: (sb.z || 0) + 1 })} style={{ ...btn(false, 1), fontSize: 15, padding: '3px 10px' }}>up</button>
               </div>
+              {model.merge && boneMerges(sb) && (() => {
+                const eff = effectiveZ(model, sb, true);
+                const mismatch = eff.z !== (sb.z || 0);
+                return (
+                  <div style={{ fontSize: 13, marginTop: -6, marginBottom: 12, color: mismatch ? '#a23b28' : undefined, opacity: mismatch ? 1 : 0.5 }}>
+                    {mismatch ? '⚠ ' : ''}renders at z={eff.z} <span style={{ opacity: 0.7 }}>(seamless group "{eff.group}" — lowest z of its members wins)</span>
+                  </div>
+                );
+              })()}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <span style={{ opacity: 0.7, fontSize: 15, width: 62 }}>Length</span>
                 <input type="number" step="1" value={Math.round(sb.len || 0)} onChange={(e) => upBone(sb.id, { len: +e.target.value || 0 })}
@@ -554,6 +564,16 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
                 <span style={{ fontSize: 15, minWidth: 26, textAlign: 'center' }}>{shp.z != null ? shp.z : 0}</span>
                 <button onClick={() => upShape(shp.id, { z: (shp.z != null ? shp.z : 0) + 1 })} style={{ ...btn(false, 1), fontSize: 15, padding: '3px 10px' }}>up</button>
               </div>
+              {model.merge && shapeMerges(shp, model.colors) && (() => {
+                const eff = effectiveZ(model, shp, false);
+                const ownZ = shp.z != null ? shp.z : 0;
+                const mismatch = eff.z !== ownZ;
+                return (
+                  <div style={{ fontSize: 13, marginTop: -2, marginBottom: 10, color: mismatch ? '#a23b28' : undefined, opacity: mismatch ? 1 : 0.5 }}>
+                    {mismatch ? '⚠ ' : ''}renders at z={eff.z} <span style={{ opacity: 0.7 }}>(seamless group "{eff.group}" — lowest z of its members wins)</span>
+                  </div>
+                );
+              })()}
               {model.merge && (
                 <div style={{ marginTop: 14, paddingTop: 12, borderTop: '2px dashed #d8d0bd' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
@@ -851,18 +871,22 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
           const b = byId[d.id]; const o = W[d.id];
           const wa = Math.atan2(wy - o.oy, wx - o.ox);
           const deg = b.parent == null ? wa * DEG : (wa - W[b.parent].A) * DEG;
-          setWorking((p) => { const np = { angles: { ...p.angles, [d.id]: +deg.toFixed(1) }, root: p.root || {} }; workingRef.current = np; return np; });
+          setWorking((p) => { const np = { angles: { ...p.angles, [d.id]: +deg.toFixed(1) }, root: p.root || {}, visible: p.visible }; workingRef.current = np; return np; });
         } else if (d.type === 'root') {
-          setWorking((p) => { const np = { angles: p.angles || {}, root: { ...(p.root || {}), x: Math.round(wx - (byId.root.x || 0)), y: Math.round(wy - (byId.root.y || 0)) } }; workingRef.current = np; return np; });
+          setWorking((p) => { const np = { angles: p.angles || {}, root: { ...(p.root || {}), x: Math.round(wx - (byId.root.x || 0)), y: Math.round(wy - (byId.root.y || 0)) }, visible: p.visible }; workingRef.current = np; return np; });
         }
       };
       const up = () => {
         const d = drag.current; drag.current = null;
-        // auto-commit the posed joints as a keyframe at the current time
+        // auto-commit the posed joints as a keyframe at the current time —
+        // merge angles/root into the existing key's pose rather than
+        // replacing it wholesale, so a shape's `visible` state set on this
+        // key (e.g. via the eye toggle) survives re-posing a joint here.
         if (d && (d.type === 'tip' || d.type === 'root') && actRef.current && actId != null) {
-          const pose = clone(workingRef.current || { angles: {}, root: {} });
+          const wp = workingRef.current || { angles: {}, root: {} };
+          const angles = clone(wp.angles || {}), root = clone(wp.root || {});
           const t = timeRef.current;
-          setModel((m) => { const a = clone(m.actions[actId]); const eps = 0.02; const i = a.keys.findIndex((k) => Math.abs(k.t - t) < eps); if (i >= 0) a.keys[i] = { t: +t.toFixed(2), pose }; else { a.keys.push({ t: +t.toFixed(2), pose }); a.keys.sort((x, y) => x.t - y.t); } return { ...m, actions: { ...m.actions, [actId]: a } }; });
+          setModel((m) => { const a = clone(m.actions[actId]); const eps = 0.02; const i = a.keys.findIndex((k) => Math.abs(k.t - t) < eps); if (i >= 0) a.keys[i] = { ...a.keys[i], t: +t.toFixed(2), pose: { ...a.keys[i].pose, angles, root } }; else { a.keys.push({ t: +t.toFixed(2), pose: { angles, root } }); a.keys.sort((x, y) => x.t - y.t); } return { ...m, actions: { ...m.actions, [actId]: a } }; });
         }
       };
       window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
@@ -881,15 +905,18 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
     // the keyframe at the current playhead time (creating one there if none
     // exists yet), same auto-commit pattern as posing a joint.
     const effectiveVisible = (s) => (working && working.visible && Object.prototype.hasOwnProperty.call(working.visible, s.id)) ? !!working.visible[s.id] : !s.hidden;
-    // Same "which key am I editing" resolution as delKey/copyKey: prefer the
-    // explicitly selected key, else the nearest one within 0.1s, else "none"
-    // (meaning: create a fresh key at the exact playhead time).
+    // Which key am I editing: prefer the explicitly selected key, else a key
+    // sitting right at the playhead, else "none" (meaning: create a fresh key
+    // at the exact playhead time). Visibility is a held/step curve computed
+    // from keys at or before the playhead (see heldVisible in engine.ts), so
+    // picking the *nearest* key here — even one still ahead of the playhead —
+    // wrote the toggle into a keyframe that hadn't taken effect yet, making
+    // the eye icon look like it silently reverted itself.
     const keyIndexAt = () => {
       if (!act) return -1;
       if (selKey >= 0 && selKey < act.keys.length) return selKey;
-      let bd = 1e9, best = -1;
-      act.keys.forEach((k, i) => { const dd = Math.abs(k.t - time); if (dd < bd) { bd = dd; best = i; } });
-      return bd < 0.1 ? best : -1;
+      const eps = 0.02;
+      return act.keys.findIndex((k) => Math.abs(k.t - time) < eps);
     };
     const setShapeVisible = (shapeId, val) => {
       if (!act) return;
@@ -1022,7 +1049,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
           {/* timeline */}
           <div style={{ flex: 'none', padding: '8px 18px 12px', borderTop: '2px solid #e3dcca', background: 'rgba(255,255,255,0.45)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <button onClick={() => setPlaying((v) => !v)} style={btn(playing, 0)}>{playing ? '⏹ stop' : '▶ play'}</button>
+              <button onClick={() => setPlaying((v) => { const nv = !v; if (nv) setSelKey(-1); return nv; })} style={btn(playing, 0)}>{playing ? '⏹ stop' : '▶ play'}</button>
               <Grp label="Key" style={{ margin: 0 }}>
                 <IBtn label="◆" title="Set key at playhead" onClick={setKey} disabled={!act} />
                 <IBtn label="－" title="Delete selected key" onClick={delKey} disabled={!act} danger />
@@ -1233,8 +1260,12 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
     useEffect(() => { try { localStorage.setItem(STORE, JSON.stringify(model)); } catch (e) {} }, [model]);
 
     // ---- file source: either a server path or a File System Access handle ----
+    // serverPath is persisted across reloads (unlike fileHandle, which the browser
+    // can't serialize): otherwise a page refresh silently drops the auto-save link
+    // — the model itself survives via localStorage, so nothing *looks* wrong until
+    // you notice "unsaved" in the header and wonder why your edits aren't hitting disk.
     const [fileHandle, setFileHandle] = useState(null);   // FileSystemFileHandle | null
-    const [serverPath, setServerPath] = useState(null);   // absolute path string | null
+    const [serverPath, setServerPath] = useState(() => { try { return localStorage.getItem(SERVER_PATH_STORE) || null; } catch (e) { return null; } });
     const [recentFiles, setRecentFiles] = useState([]);
     const [projectModels, setProjectModels] = useState([]); // [{name, path}] from /api/puppet/list
     const [saveStatus, setSaveStatus] = useState('idle');
@@ -1243,7 +1274,7 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
     const fileHandleRef = useRef(fileHandle);
     const serverPathRef = useRef(serverPath);
     useEffect(() => { fileHandleRef.current = fileHandle; }, [fileHandle]);
-    useEffect(() => { serverPathRef.current = serverPath; }, [serverPath]);
+    useEffect(() => { serverPathRef.current = serverPath; try { if (serverPath) localStorage.setItem(SERVER_PATH_STORE, serverPath); else localStorage.removeItem(SERVER_PATH_STORE); } catch (e) {} }, [serverPath]);
 
     // load IDB handles + project model list on mount
     useEffect(() => { loadRecentHandles().then(setRecentFiles); }, []);
@@ -1402,8 +1433,8 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
 
     return (
       <div style={{ position: 'fixed', inset: 0, background: 'radial-gradient(circle at 50% 36%, #faf7f0 0%, ' + PAPER + ' 62%, #ece5d6 100%)', overflow: 'hidden', fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-        <div style={{ position: 'relative', height: 54, borderBottom: '2px solid #ded7c6', background: 'rgba(255,255,255,0.5)', zIndex: 40 }}>
-          <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ position: 'relative', height: 54, borderBottom: '2px solid #ded7c6', background: 'rgba(255,255,255,0.5)', zIndex: 40, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10 }}>
+          <div style={{ flex: '1 1 0%', minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
             <button onClick={() => setShowLibrary((v) => !v)} style={{ ...btn(showLibrary, 0), fontSize: 17 }} title="Model library (⌘L)">📚</button>
             <div ref={fileMenuRef} style={{ position: 'relative' }}>
               <button onClick={() => setFileMenuOpen((v) => !v)} style={{ ...btn(fileMenuOpen, 1), fontSize: 19, fontWeight: 700 }}>File ▾</button>
@@ -1429,21 +1460,21 @@ import { Puppet, computeWorld, samplePose, boneMerges, shapeMerges, groupOfIn, l
                 </div>
               )}
             </div>
-            <span style={{ fontSize: 16, opacity: 0.75, maxWidth: 160, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.name || 'Untitled puppet'}</span>
-            <span style={{ fontSize: 13, color: saveIndicator.color, whiteSpace: 'nowrap', cursor: hasFile ? 'default' : 'pointer' }} onClick={() => !hasFile && setShowLibrary(true)} title={fileName || 'Click to open library'}>
+            <span style={{ fontSize: 16, opacity: 0.75, maxWidth: 160, flex: '0 1 auto', minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.name || 'Untitled puppet'}</span>
+            <span style={{ fontSize: 13, color: saveIndicator.color, flex: '1 1 auto', minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: hasFile ? 'default' : 'pointer' }} onClick={() => !hasFile && setShowLibrary(true)} title={fileName || 'Click to open library'}>
               {saveIndicator.text}{fileName ? <span style={{ opacity: 0.6 }}> · {fileName}</span> : null}
             </span>
-            <span style={{ width: 1, height: 22, background: '#cfc7b4' }}></span>
-            <button onClick={undo} title="Undo (⌘Z)" style={{ ...btn(false, 0), fontSize: 19, opacity: canUndo ? 1 : 0.4 }}>↶</button>
-            <button onClick={redo} title="Redo (⇧⌘Z)" style={{ ...btn(false, 1), fontSize: 19, opacity: canRedo ? 1 : 0.4 }}>↷</button>
+            <span style={{ width: 1, height: 22, background: '#cfc7b4', flex: 'none' }}></span>
+            <button onClick={undo} title="Undo (⌘Z)" style={{ ...btn(false, 0), fontSize: 19, opacity: canUndo ? 1 : 0.4, flex: 'none' }}>↶</button>
+            <button onClick={redo} title="Redo (⇧⌘Z)" style={{ ...btn(false, 1), fontSize: 19, opacity: canRedo ? 1 : 0.4, flex: 'none' }}>↷</button>
           </div>
-          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 10 }}>
             <button onClick={() => setMode('rig')} style={{ ...btn(mode === 'rig', 0), fontSize: 22, padding: '4px 20px' }}>Rig</button>
             <button onClick={() => setMode('action')} style={{ ...btn(mode === 'action', 1), fontSize: 22, padding: '4px 20px' }}>Action</button>
             <button onClick={() => setMode('palette')} style={{ ...btn(mode === 'palette', 0), fontSize: 22, padding: '4px 20px' }}>Palette</button>
           </div>
-          <div style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)' }}>
-            <button onClick={() => setModel((m) => ({ ...m, merge: !m.merge }))} title="Merge body parts into one seamless silhouette — inner contact lines dissolve, outer edges stay. Fine-tune per part in Rig mode." style={{ ...btn(!!model.merge, 0), fontSize: 19, fontWeight: model.merge ? 700 : 400 }}>{model.merge ? '✓ Seamless' : '⊙ Seamless'}</button>
+          <div style={{ flex: '1 1 0%', minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={() => setModel((m) => ({ ...m, merge: !m.merge }))} title="Merge body parts into one seamless silhouette — inner contact lines dissolve, outer edges stay. Fine-tune per part in Rig mode." style={{ ...btn(!!model.merge, 0), fontSize: 19, fontWeight: model.merge ? 700 : 400, flex: 'none' }}>{model.merge ? '✓ Seamless' : '⊙ Seamless'}</button>
           </div>
           <input ref={fileRef} type="file" accept=".js,.json,application/json,text/javascript" style={{ display: 'none' }} onChange={(e) => { loadFromFile(e.target.files && e.target.files[0]); e.target.value = ''; }} />
         </div>

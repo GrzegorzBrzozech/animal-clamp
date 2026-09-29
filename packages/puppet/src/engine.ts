@@ -1,4 +1,4 @@
-import type { Bone, Shape, Pose, PuppetAction, PuppetColors, WorldMap, WorldNode } from './types';
+import type { Bone, Shape, Pose, PuppetAction, PuppetColors, PuppetModel, WorldMap, WorldNode } from './types';
 
 export const RAD = Math.PI / 180;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -66,7 +66,17 @@ export function samplePose(action: PuppetAction, time: number): Pose {
   if (!action?.keys?.length) return { angles: {}, root: {} };
   const keys = [...action.keys].sort((a, b) => a.t - b.t);
   const dur = action.dur > 0 ? action.dur : (keys[keys.length - 1].t || 1);
-  let t = action.loop ? ((time % dur) + dur) % dur : clamp(time, 0, dur);
+  // `((time % dur) + dur) % dur` is the usual way to normalize a possibly-negative
+  // modulo, but the extra `+ dur` round-trip loses a ULP or two in floating point
+  // even when `time` is already in range — e.g. (0.41 % 1.5 + 1.5) % 1.5 comes back
+  // as 0.4099999999999999, not 0.41. That's enough for the `<=` comparisons below to
+  // treat "sitting exactly on keyframe N" as "just before keyframe N", so the pose
+  // (and any `visible` override set on that key) reads as the *previous* key's state
+  // until time drifts a hair past it. Skip the second modulo whenever the first
+  // already landed in range, which is the overwhelmingly common case.
+  let t: number;
+  if (action.loop) { t = time % dur; if (t < 0) t += dur; }
+  else t = clamp(time, 0, dur);
 
   const heldVisible = (upto: number): Record<string, boolean> => {
     const acc: Record<string, boolean> = {};
@@ -143,6 +153,43 @@ export function layerOf(bones: Bone[], node: Bone | Shape | string): string {
   const byId: Record<string, Bone> = {};
   bones.forEach((b) => { byId[b.id] = b; });
   return resolveLayer(byId, node);
+}
+
+// Mirrors the grouping/z logic in Puppet.tsx's render loop: a merged (seamless)
+// bone/shape doesn't draw at its own z — its fill lands in a shared <g> per merge
+// group, and that group renders at the *minimum* z of everything merged into it.
+// Raising one member's z alone does nothing if another member (often an
+// attached shape, not the bone) still has a lower z — this exposes that
+// computed z so the rig editor can show it next to the raw value.
+export function effectiveZ(model: PuppetModel, node: Bone | Shape, isBone: boolean): { z: number; group: string | null } {
+  const byId: Record<string, Bone> = {};
+  (model.bones || []).forEach((b) => { byId[b.id] = b; });
+  const bone = isBone ? (node as Bone) : byId[(node as Shape).bone];
+  const ownZ = isBone ? ((node as Bone).z ?? 0) : ((node as Shape).z ?? (bone?.z ?? 0));
+  if (!model.merge) return { z: ownZ, group: null };
+
+  const wantsMerge = isBone ? boneMerges(node as Bone) : shapeMerges(node as Shape, model.colors);
+  if (!wantsMerge) return { z: ownZ, group: null };
+
+  const layer = isBone ? (node as Bone).layer : ((node as Shape).layer ?? bone?.layer);
+  const grp = groupOf(byId, node as Bone | Shape) ?? (layer === 'front' ? '__front__' : '__back__');
+
+  let min = Infinity;
+  (model.bones || []).forEach((b) => {
+    if (!boneMerges(b)) return;
+    const g = groupOf(byId, b) ?? (b.layer === 'front' ? '__front__' : '__back__');
+    if (g !== grp) return;
+    if ((b.z ?? 0) < min) min = b.z ?? 0;
+  });
+  (model.shapes || []).forEach((s) => {
+    if (!shapeMerges(s, model.colors)) return;
+    const sBone = byId[s.bone];
+    const g = groupOf(byId, s) ?? ((s.layer ?? sBone?.layer) === 'front' ? '__front__' : '__back__');
+    if (g !== grp) return;
+    const sz = s.z ?? (sBone?.z ?? 0);
+    if (sz < min) min = sz;
+  });
+  return { z: min === Infinity ? ownZ : min, group: grp };
 }
 
 export function polyPath(pts: [number, number][], closed?: boolean): string {

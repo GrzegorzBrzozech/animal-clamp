@@ -24,7 +24,7 @@ export const model = {
       "drawAs": "limb",
       "width": 28,
       "layer": "back",
-      "icon": "🫜",
+      "icon": "🌳",
       "mergeGroup": null
     },
     {
@@ -63,9 +63,9 @@ export const model = {
       "angle": -51.7,
       "len": 78,
       "drawAs": "limb",
-      "width": 45,
-      "z": 14,
-      "endCap": true,
+      "width": 49,
+      "z": 16,
+      "endCap": false,
       "mergeGroup": "armL"
     },
     {
@@ -77,7 +77,7 @@ export const model = {
       "len": 80,
       "drawAs": "limb",
       "width": 52,
-      "z": 10,
+      "z": 9,
       "endCap": false,
       "mergeGroup": "body"
     },
@@ -90,7 +90,7 @@ export const model = {
       "len": 77,
       "drawAs": "limb",
       "width": 45,
-      "z": 9,
+      "z": 14,
       "endCap": true,
       "mergeGroup": "armR",
       "merge": true
@@ -170,7 +170,7 @@ export const model = {
       "len": 374,
       "drawAs": null,
       "width": 28,
-      "z": 8,
+      "z": 12,
       "label": "Спис.",
       "icon": "🦯"
     },
@@ -198,7 +198,7 @@ export const model = {
       "len": 100,
       "drawAs": null,
       "width": 28,
-      "z": 8,
+      "z": 25,
       "label": "Beet",
       "icon": "🫜"
     }
@@ -700,7 +700,7 @@ export const model = {
     {
       "id": "shapehpyuy",
       "bone": "armLowerL",
-      "z": 11,
+      "z": 16,
       "fill": "skin",
       "kind": "circle",
       "cx": 85,
@@ -713,7 +713,7 @@ export const model = {
     {
       "id": "shape5a485",
       "bone": "armLowerR",
-      "z": 10,
+      "z": 15,
       "fill": "skin",
       "kind": "circle",
       "cx": 84,
@@ -726,7 +726,7 @@ export const model = {
     {
       "id": "shape9k3hj",
       "bone": "armLowerR",
-      "z": 10,
+      "z": 15,
       "fill": "skin",
       "kind": "circle",
       "cx": 103,
@@ -739,7 +739,7 @@ export const model = {
     {
       "id": "shapepy1qf",
       "bone": "armLowerR",
-      "z": 10,
+      "z": 15,
       "fill": "skin",
       "kind": "circle",
       "cx": 96,
@@ -752,7 +752,7 @@ export const model = {
     {
       "id": "shapeugpyx",
       "bone": "armLowerL",
-      "z": 11,
+      "z": 16,
       "fill": "skin",
       "kind": "circle",
       "cx": 98,
@@ -764,7 +764,7 @@ export const model = {
     {
       "id": "shape7vczj",
       "bone": "armLowerL",
-      "z": 11,
+      "z": 16,
       "fill": "skin",
       "kind": "circle",
       "cx": 95,
@@ -778,7 +778,7 @@ export const model = {
     {
       "id": "shapet7k8o",
       "bone": "root",
-      "z": 10,
+      "z": 6,
       "fill": "ink",
       "kind": "circle",
       "cx": 39,
@@ -791,7 +791,7 @@ export const model = {
     {
       "id": "shapek5gxj",
       "bone": "root",
-      "z": 10,
+      "z": 6,
       "fill": "ink",
       "kind": "circle",
       "cx": -64,
@@ -804,7 +804,7 @@ export const model = {
     {
       "id": "shapecevl7",
       "bone": "root",
-      "z": 10,
+      "z": 6,
       "fill": "ink",
       "kind": "circle",
       "cx": -18,
@@ -817,7 +817,7 @@ export const model = {
     {
       "id": "shapelnmm6",
       "bone": "root",
-      "z": 10,
+      "z": 6,
       "fill": "ink",
       "kind": "circle",
       "cx": 37,
@@ -897,7 +897,7 @@ export const model = {
     {
       "id": "shaped71yx",
       "bone": "root",
-      "z": 10,
+      "z": 6,
       "fill": "ink",
       "kind": "circle",
       "cx": 48,
@@ -910,7 +910,7 @@ export const model = {
     {
       "id": "shapegtnz7",
       "bone": "root",
-      "z": 10,
+      "z": 6,
       "fill": "ink",
       "kind": "circle",
       "cx": 76,
@@ -923,7 +923,7 @@ export const model = {
     {
       "id": "shapesebg7",
       "bone": "root",
-      "z": 10,
+      "z": 6,
       "fill": "ink",
       "kind": "circle",
       "cx": -9,
@@ -1078,7 +1078,7 @@ export const model = {
       "id": "shape5348n",
       "bone": "bone35bhe",
       "kind": "poly",
-      "z": 9.5,
+      "z": 11.5,
       "fill": "wood",
       "pts": [
         [
@@ -1108,7 +1108,7 @@ export const model = {
       "id": "shapenytyv",
       "bone": "bone35bhe",
       "kind": "poly",
-      "z": 9.5,
+      "z": 11.5,
       "fill": "Fur",
       "pts": [
         [
@@ -1138,7 +1138,7 @@ export const model = {
       "id": "shapee0wz6",
       "bone": "bonecxzjy",
       "kind": "poly",
-      "z": 10,
+      "z": 14,
       "fill": "wood",
       "pts": [
         [
@@ -1166,7 +1166,7 @@ export const model = {
       "id": "shape49ihi",
       "bone": "bonecxzjy",
       "kind": "poly",
-      "z": 10,
+      "z": 14,
       "fill": "wood",
       "pts": [
         [
@@ -1897,7 +1897,7 @@ export const model = {
       "loop": true,
       "keys": [
         {
-          "t": 0.01,
+          "t": 0,
           "pose": {
             "angles": {
               "armLowerL": -70.7,
@@ -1913,7 +1913,7 @@ export const model = {
           }
         },
         {
-          "t": 0.41,
+          "t": 0.64,
           "pose": {
             "angles": {
               "armLowerL": -70.7,
@@ -1932,7 +1932,7 @@ export const model = {
           }
         },
         {
-          "t": 0.78,
+          "t": 0.96,
           "pose": {
             "angles": {
               "armLowerL": -60.5,
@@ -1944,11 +1944,14 @@ export const model = {
               "x": 0,
               "y": 0,
               "r": 0
+            },
+            "visible": {
+              "mouthOpen": false
             }
           }
         },
         {
-          "t": 1.01,
+          "t": 1.33,
           "pose": {
             "angles": {
               "armLowerL": -70.7,
@@ -1960,22 +1963,28 @@ export const model = {
               "x": 0,
               "y": 0,
               "r": 0
+            },
+            "visible": {
+              "mouthOpen": true
             }
           }
         },
         {
-          "t": 1.22,
+          "t": 1.16,
           "pose": {
             "angles": {
-              "armLowerL": -45.7,
-              "armUpperL": 100,
-              "armLowerR": 94.47721807935491,
-              "armUpperR": 65.29399801248675
+              "armLowerL": -70.7,
+              "armUpperL": 112.5,
+              "armLowerR": 93.74848942893624,
+              "armUpperR": 71.06654479943727
             },
             "root": {
               "x": 0,
               "y": 0,
               "r": 0
+            },
+            "visible": {
+              "mouthOpen": false
             }
           }
         }
