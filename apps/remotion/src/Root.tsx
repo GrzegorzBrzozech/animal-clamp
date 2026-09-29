@@ -32,6 +32,20 @@ import { teachersSalarySchema, DEFAULT_STARTS as TEACHERS_SALARY_STARTS } from "
 import { HeatDeathsUsEu } from "~/compositions/0151-conditioners/heat-deaths-us-eu";
 import { heatDeathsUsEuConfig } from "~/compositions/0151-conditioners/heat-deaths-us-eu/config";
 import { heatDeathsUsEuSchema, DEFAULT_STARTS as HEAT_DEATHS_STARTS } from "~/compositions/0151-conditioners/heat-deaths-us-eu/plan";
+import { MarginalUtility } from "~/compositions/0157-translate-costs/marginal-utility";
+import { marginalUtilityConfig } from "~/compositions/0157-translate-costs/marginal-utility/config";
+import { SellerMargin } from "~/compositions/0157-translate-costs/seller-margin";
+import { sellerMarginConfig } from "~/compositions/0157-translate-costs/seller-margin/config";
+import { sellerMarginSchema, DEFAULT_STARTS as SELLER_MARGIN_STARTS } from "~/compositions/0157-translate-costs/seller-margin/plan";
+import { MintCoins } from "~/compositions/0154-engineer-vs-state/mint-coins";
+import { mintCoinsConfig } from "~/compositions/0154-engineer-vs-state/mint-coins/config";
+import { mintCoinsSchema, DEFAULT_STARTS as MINT_COINS_STARTS } from "~/compositions/0154-engineer-vs-state/mint-coins/plan";
+import { RichAmericanPoster } from "~/compositions/rich-american-poster";
+import { richAmericanPosterConfig } from "~/compositions/rich-american-poster/config";
+import { richAmericanPosterSchema, DEFAULT_STARTS as RICH_AMERICAN_POSTER_STARTS } from "~/compositions/rich-american-poster/plan";
+import { LeaderBash } from "~/compositions/leader-bash";
+import { leaderBashConfig } from "~/compositions/leader-bash/config";
+import { leaderBashSchema, DEFAULT_STARTS as LEADER_BASH_STARTS } from "~/compositions/leader-bash/plan";
 import { HabsburgInbreeding } from "~/compositions/0148-carnivore-state/habsburg-inbreeding";
 import { habsburgInbreedingConfig } from "~/compositions/0148-carnivore-state/habsburg-inbreeding/config";
 import { habsburgInbreedingSchema, DEFAULT_STARTS as HABSBURG_STARTS } from "~/compositions/0148-carnivore-state/habsburg-inbreeding/plan";
@@ -52,6 +66,8 @@ import { carnivoresConfig } from "~/compositions/lab-complex/carnivores/config";
 import { carnivoresSchema } from "~/compositions/lab-complex/carnivores/plan";
 import { HomoErectus } from "~/compositions/lab-complex/homo-erectus";
 import { homoErectusConfig } from "~/compositions/lab-complex/homo-erectus/config";
+import { CavemanSubscribe } from "~/compositions/caveman-subscribe";
+import { cavemanSubscribeConfig } from "~/compositions/caveman-subscribe/config";
 import { CharacterGallery } from "~/compositions/lab-simple/CharacterGallery";
 import { PredationPencilScene } from "~/compositions/lab-simple/PredationPencilScene";
 import { VegansVsHunters } from "~/compositions/lab-simple/VegansVsHunters";
@@ -181,6 +197,63 @@ export const RemotionRoot: React.FC = () => {
         />
       </Folder>
 
+      <Folder name="0157-translate-costs">
+        <Composition
+          id={marginalUtilityConfig.id}
+          component={MarginalUtility}
+          durationInFrames={marginalUtilityConfig.durationInFrames}
+          fps={marginalUtilityConfig.fps}
+          width={marginalUtilityConfig.width}
+          height={marginalUtilityConfig.height}
+        />
+        <Composition
+          id={sellerMarginConfig.id}
+          component={SellerMargin}
+          schema={sellerMarginSchema}
+          defaultProps={SELLER_MARGIN_STARTS}
+          durationInFrames={sellerMarginConfig.durationInFrames}
+          fps={sellerMarginConfig.fps}
+          width={sellerMarginConfig.width}
+          height={sellerMarginConfig.height}
+        />
+        <Composition
+          id={richAmericanPosterConfig.id}
+          component={RichAmericanPoster}
+          schema={richAmericanPosterSchema}
+          defaultProps={RICH_AMERICAN_POSTER_STARTS}
+          durationInFrames={richAmericanPosterConfig.durationInFrames}
+          fps={richAmericanPosterConfig.fps}
+          width={richAmericanPosterConfig.width}
+          height={richAmericanPosterConfig.height}
+        />
+      </Folder>
+
+      <Folder name="0154-engineer-vs-state">
+        <Composition
+          id={mintCoinsConfig.id}
+          component={MintCoins}
+          schema={mintCoinsSchema}
+          defaultProps={MINT_COINS_STARTS}
+          durationInFrames={mintCoinsConfig.durationInFrames}
+          fps={mintCoinsConfig.fps}
+          width={mintCoinsConfig.width}
+          height={mintCoinsConfig.height}
+        />
+      </Folder>
+
+      <Folder name="0158-against-the-rich">
+        <Composition
+          id={leaderBashConfig.id}
+          component={LeaderBash}
+          schema={leaderBashSchema}
+          defaultProps={LEADER_BASH_STARTS}
+          durationInFrames={leaderBashConfig.durationInFrames}
+          fps={leaderBashConfig.fps}
+          width={leaderBashConfig.width}
+          height={leaderBashConfig.height}
+        />
+      </Folder>
+
       <Folder name="0148-carnivore-state">
         <Composition
           id={habsburgInbreedingConfig.id}
@@ -259,6 +332,17 @@ export const RemotionRoot: React.FC = () => {
           fps={homoErectusConfig.fps}
           width={homoErectusConfig.width}
           height={homoErectusConfig.height}
+        />
+      </Folder>
+
+      <Folder name="inserts">
+        <Composition
+          id={cavemanSubscribeConfig.id}
+          component={CavemanSubscribe}
+          durationInFrames={cavemanSubscribeConfig.durationInFrames}
+          fps={cavemanSubscribeConfig.fps}
+          width={cavemanSubscribeConfig.width}
+          height={cavemanSubscribeConfig.height}
         />
       </Folder>
 
